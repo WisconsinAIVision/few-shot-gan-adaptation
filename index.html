@@ -118,10 +118,10 @@
 
 <html>
 <head>
-	<title>This is my paper title</title>
-	<meta property="og:image" content="Path to my teaser.png"/> <!-- Facebook automatically scrapes this. Go to https://developers.facebook.com/tools/debug/ if you update and want to force Facebook to rescrape. -->
-	<meta property="og:title" content="Creative and Descriptive Paper Title." />
-	<meta property="og:description" content="Paper description." />
+	<title>Few shot GAN Adaptation</title>
+	<meta property="og:image" content="./reources/concept.gif"/> <!-- Facebook automatically scrapes this. Go to https://developers.facebook.com/tools/debug/ if you update and want to force Facebook to rescrape. -->
+	<meta property="og:title" content="Few-shot Image Generation via Cross-domain Correspondence" />
+	<meta property="og:description" content="Adapting a source GAN to a target domain using 10 images" />
 
 	<!-- Get from Google Analytics -->
 	<!-- Global site tag (gtag.js) - Google Analytics -->
@@ -138,24 +138,20 @@
 <body>
 	<br>
 	<center>
-		<span style="font-size:36px">Creative and Descriptive Paper Title</span>
-		<table align=center width=600px>
-			<table align=center width=600px>
+		<span style="font-size:36px">Few-shot Image Generation via Cross-domain Correspondence</span><br>
+		<span style="font-size:25px;line-height:2.0">CVPR 2021</span><br>
+		<table align=center width=1100px>
+			<table align=center width=1100px>
 				<tr>
-					<td align=center width=100px>
-						<center>
-							<span style="font-size:24px"><a href="https://en.wikipedia.org/wiki/James_J._Gibson">First Author</a></span>
-						</center>
-					</td>
-					<td align=center width=100px>
-						<center>
-							<span style="font-size:24px"><a href="https://en.wikipedia.org/wiki/James_J._Gibson">Second Author</a></span>
-						</center>
-					</td>
-					<td align=center width=100px>
-						<center>
-							<span style="font-size:24px"><a href="https://en.wikipedia.org/wiki/James_J._Gibson">Third Author</a></span>
-						</center>
+					<td align=center width=250px>
+
+							<span style="font-size:22px"><a href="https://utkarshojha.github.io/">Utkarsh Ojha</a></span>&nbsp;&nbsp;&nbsp;
+							<span style="font-size:22px"><a href="https://yijunmaverick.github.io/">Yijun Li</a></span>&nbsp;&nbsp;&nbsp;
+							<span style="font-size:22px"><a href="https://research.adobe.com/person/jingwan-lu/">Jingwan Lu</a></span>&nbsp;&nbsp;&nbsp;
+							<span style="font-size:22px"><a href="https://people.eecs.berkeley.edu/~efros/">Alexei A. Efros</a></span>&nbsp;&nbsp;&nbsp;
+							<span style="font-size:22px"><a href="https://web.cs.ucdavis.edu/~yjlee/">Yong Jae Lee</a></span>&nbsp;&nbsp;&nbsp;
+							<span style="font-size:22px"><a href="https://research.adobe.com/person/eli-shechtman/">Eli Shechtman</a></span>&nbsp;&nbsp;&nbsp;
+							<span style="font-size:22px"><a href="https://richzhang.github.io/">Richard Zhang</a></span>
 					</td>
 				</tr>
 			</table>
@@ -163,36 +159,32 @@
 				<tr>
 					<td align=center width=120px>
 						<center>
-							<span style="font-size:24px"><a href=''>[Paper]</a></span>
+							<span style="font-size:24px"><a href='https://utkarshojha.github.io/few-shot-gan-adaptation/'>[Paper]</a></span>
 						</center>
 					</td>
+					
 					<td align=center width=120px>
 						<center>
-							<span style="font-size:24px"><a href='https://github.com/richzhang/webpage-template'>[GitHub]</a></span><br>
+							<span style="font-size:24px"><a href='https://github.com/utkarshojha/few-shot-gan-adaptation'>[GitHub]</a></span><br>
 						</center>
 					</td>
+					
 				</tr>
 			</table>
 		</table>
 	</center>
-
+	<br>
 	<center>
 		<table align=center width=850px>
 			<tr>
-				<td width=260px>
+				<td width=500px>
 					<center>
-						<img class="round" style="width:500px" src="./resources/teaser.png"/>
+						<img class="round" style="width:900px" src="./resources/concept.gif"/>
 					</center>
 				</td>
 			</tr>
 		</table>
-		<table align=center width=850px>
-			<tr>
-				<td>
-					This was a template originally made for <a href="http://richzhang.github.io/colorization/">Colorful Image Colorization</a>. The code can be found in this <a href="https://github.com/richzhang/webpage-template">repository</a>.
-				</td>
-			</tr>
-		</table>
+
 	</center>
 
 	<hr>
@@ -201,13 +193,14 @@
 		<center><h1>Abstract</h1></center>
 		<tr>
 			<td>
-				This is my abstract.
+				Training generative models, such as GANs, on a target domain containing limited examples (e.g., 10) can easily result in overfitting. In this work, we seek to utilize a large source domain for pretraining and transfer the diversity information from source to target. We propose to preserve the relative similarities and differences between instances in the source via a novel cross-domain distance consistency loss. To further reduce overfitting, we present an anchor-based strategy to encourage different levels of realism over different regions in the latent space. With extensive results in both photorealistic and non-photorealistic domains, we demonstrate qualitatively and quantitatively that our few-shot model automatically discovers correspondences between source and target domains and generates more diverse and realistic images than previous methods.
 			</td>
 		</tr>
 	</table>
 	<br>
 
 	<hr>
+	<!--
 	<center><h1>Talk</h1></center>
 	<p align="center">
 		<iframe width="660" height="395" src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen align="center"></iframe>
@@ -223,51 +216,97 @@
 		</tr>
 	</table>
 	<hr>
+	-->
+	<center><h1>Method</h1></center>
 
-	<center><h1>Code</h1></center>
 
-	<table align=center width=420px>
-		<center>
-			<tr>
-				<td>
-				</td>
-			</tr>
-		</center>
-	</table>
-	<table align=center width=400px>
+	<table align=center width=600px>
 		<tr>
-			<td align=center width=400px>
+			<td align=center width=600px>
 				<center>
-					<td><img class="round" style="width:450px" src="./resources/method_diagram.png"/></td>
+					<td><img class="round" style="width:650px" src="./resources/method_diagram.png"/></td>
 				</center>
 			</td>
 		</tr>
 	</table>
-	<table align=center width=850px>
-		<center>
-			<tr>
-				<td>
-					Short description if wanted
-				</td>
-			</tr>
-		</center>
-	</table>
-	<table align=center width=800px>
-		<br>
-		<tr><center>
-			<span style="font-size:28px">&nbsp;<a href='https://github.com/richzhang/webpage-template'>[GitHub]</a>
-			</center>
-		</span>
-	</table>
+
 	<br>
 	<hr>
-	<table align=center width=450px>
-		<center><h1>Paper and Supplementary Material</h1></center>
+	<center><h1>Natural face to other artistic-face domains</h1></center>
+	We show the results of adapting a source GAN trained on natural faces (FFHQ) to different target domains using just 10 examples from each of them. <br><br>
+	<table align=center width=1000px>
+  		<tr>
+			<td width=1000px>
+				<center>
+					<td><img class="round" style="width:1000px" src="./resources/face_multiple_domains.png"/></td>
+				</center>
+			</td>
+		</tr>
+	</table>
+	<br>
+        <hr>
+        <center><h1>More examples on related source/target domains</h1></center>
+	The same process is done with other pairs of source/target domains, again, with only 10 training examples. <br><br>
+        <table align=center width=1000px>
+                <tr>
+                        <td width=1000px>
+                                <center>
+                                        <td><img class="round" style="width:1000px" src="./resources/correspondence_results.png"/></td>
+                                </center>
+                        </td>
+                </tr>
+        </table>
+
+	<br>
+        <hr>
+        <center><h1>Unrelated source and target domains</h1></center>
+	In this case, the method cannot model the accurate distribution defined by few target images. However, it still discovers some interesting part-level correspondences. <br><br>
+        <table align=center width=1000px>
+                <tr>
+                        <td width=1000px>
+                                <center>
+                                        <td><img class="round" style="width:1000px" src="./resources/unrelated_source_target2.png"/></td>
+                                </center>
+                        </td>
+                </tr>
+        </table>
+
+	<br>
+        <hr>
+        <center><h1>Comparison with other methods</h1></center>
+	All the methods are some form of adaptation techniques which start with the same source model (for FFHQ) to adapt to target domains with 10 examples.
+	<br><br>
+        <table align=center width=1000px>
+                <tr>
+                        <td width=1000px>
+                                <center>
+                                        <td><img class="round" style="width:1000px" src="./resources/generations_comparisonv4_temp.png"/></td>
+                                </center>
+                        </td>
+                </tr>
+        </table>
+
+	<br>
+        <hr>
+        <center><h1>Effect of the training data size</h1></center>
+        <table align=center width=1000px>
+                <tr>
+                        <td width=1000px>
+                                <center>
+                                        <td><img class="round" style="width:1000px" src="./resources/size_ablationv2.png"/></td>
+                                </center>
+                        </td>
+                </tr>
+        </table>
+	<br>
+	<hr>
+	<table align=center width=500px>
+		<center><h1>Paper</h1></center>
 		<tr>
 			<td><a href=""><img class="layered-paper-big" style="height:175px" src="./resources/paper.png"/></a></td>
-			<td><span style="font-size:14pt">F. Author, S. Author, T. Author.<br>
-				<b>Creative and Descriptive Paper Title.</b><br>
-				In Conference, 20XX.<br>
+			<td><span style="font-size:12pt">U. Ojha, Y. Li, C. Lu, A. A. Efros,<br> Y. J. Lee, E. Shechtman, R. Zhang.<br>
+				<b>Few-shot Image Generation via Cross-domain Correspondence</b><br>
+				CVPR, 2021.<br>
 				(hosted on <a href="">ArXiv</a>)<br>
 				<!-- (<a href="./resources/camera-ready.pdf">camera ready</a>)<br> -->
 				<span style="font-size:4pt"><a href=""><br></a>
