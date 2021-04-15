@@ -43,7 +43,7 @@ The following table provides a link to each of these images:
 |-- | ------ | ------- | ------------------------------|
 | Babies | [link](http://vision9.idav.ucdavis.edu:8001/babies_real_train.zip) | [link](http://vision9.idav.ucdavis.edu:8001/babies_real_test.zip) | [link](http://vision9.idav.ucdavis.edu:8001/babies_fake.zip) |
 | Sunglasses | [link](http://vision9.idav.ucdavis.edu:8001/sunglasses_real_train.zip) | [link](http://vision9.idav.ucdavis.edu:8001/sunglasses_real_test.zip) | [link](http://vision9.idav.ucdavis.edu:8001/sunglasses_fake.zip) |
-| Sketches | [link](http://vision9.idav.ucdavis.edu:8001/sketches_real_train.zip) | [link](http://vision9.idav.ucdavis.edu:8001/sketches_real_test.zip) | [link](http://vision5.idav.ucdavis.edu:8001/sketches_fake.zip) |
+| Sketches | [link](http://vision9.idav.ucdavis.edu:8001/sketches_real_train.zip) | [link](http://vision9.idav.ucdavis.edu:8001/sketches_real_test.zip) | [link](http://vision9.idav.ucdavis.edu:8001/sketches_fake.zip) |
 
 R<sub>train</sub> is given just to illustate what the algorithm sees, and **won't** be used for computing the FID score.
 
