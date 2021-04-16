@@ -6,7 +6,7 @@ Adobe Research, UC Davis, UC Berkeley
 
 ![teaser](https://github.com/utkarshojha/few-shot-gan-adaptation/blob/gh-pages/resources/concept.gif)
 
-PyTorch implementation of adapting a source GAN (trained on a large dataset) to a target domain using very few images.
+Repository for downloading the datasets and generated images used for performing the evaluations shown in Tables 1 and 2.
 
 ### [Project page](https://utkarshojha.github.io/few-shot-gan-adaptation/) | [Paper](https://utkarshojha.github.io/few-shot-gan-adaptation/)
 
@@ -16,15 +16,6 @@ PyTorch implementation of adapting a source GAN (trained on a large dataset) to 
 
 Our method helps adapt the source GAN where one-to-one correspondence is preserved between the source G<sub>s</sub>(z) and target G<sub>t</sub>(z) images.
 
-## Requirements
-
-**Note** The base model is taken from [StyleGAN2](https://github.com/rosinality/stylegan2-pytorch)'s implementation by [@rosinality](https://github.com/rosinality).
-
-- Linux 
-- NVIDIA GPU + CUDA CuDNN 10.2  
-- PyTorch 1.7.0
-- Python 3.6.9
-- Install all the other libraries through `pip install -r requirements.txt` 
 
 ## Testing
 
