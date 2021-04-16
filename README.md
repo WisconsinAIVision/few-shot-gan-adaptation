@@ -8,7 +8,7 @@ Adobe Research, UC Davis, UC Berkeley
 
 Repository for downloading the datasets and generated images used for performing the evaluations shown in Tables 1 and 2.
 
-### [Project page](https://utkarshojha.github.io/few-shot-gan-adaptation/) | [Paper](https://utkarshojha.github.io/few-shot-gan-adaptation/)
+### [Project page](https://utkarshojha.github.io/few-shot-gan-adaptation/) | [Paper](https://arxiv.org/abs/2104.06820)
 
 ### Overview
 
