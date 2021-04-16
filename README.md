@@ -40,15 +40,15 @@ Download, and unzip the set of images into your desired directory, and compute t
 
 ### Evaluating intra-cluster distance
 
-Download the entire set of images from [here](https://drive.google.com/file/d/1GtFHCnS_J8FbrQ0tkF4AFMYubyLsu_Xu/view?usp=sharing) (1.1 GB), which are used for the results in Table 2. The organization of this collection is as follows:
+Download the entire set of images from this [link](https://drive.google.com/file/d/1GtFHCnS_J8FbrQ0tkF4AFMYubyLsu_Xu/view?usp=sharing) (1.1 GB), which are used for the results in Table 2. The organization of this collection is as follows:
  
 ```
 cluster_centers
 └── amedeo			# target domain -- will be from [amedeo, sketches]
-    └── ours			# method -- will be from [tgan, tgan_ada, freezeD, ewc, ours]
+    └── ours			# baseline -- will be from [tgan, tgan_ada, freezeD, ewc, ours]
         └── c0			# center id -- there will be 10 clusters [c0, c1 ... c9]
             ├── center.png	# cluster center -- this is one of the 10 training images used. Each cluster will have its own center
-            │── img0.png   	# generated images which matched with this cluster's center, according to LPIPS distance.
+            │── img0.png   	# generated images which matched with this cluster's center, according to LPIPS metric.
             │── img1.png
             │      .
 	    │      .
