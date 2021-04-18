@@ -18,7 +18,14 @@ Our method helps adapt the source GAN where one-to-one correspondence is preserv
 
 ## Testing
 
-**Notations** Source GAN: G<sub>s</sub> --- Target GAN: G<sub>s&#8594;t</sub>
+We provide the pre-trained models for different source and adapted (target) GAN models. 
+| Source GAN: G<sub>s</sub> | Target GAN: G<sub>s&#8594;t</sub> |
+| ------------------------- | --------------------------------- |
+| [FFHQ]() | [Sketches](), [Caricatures](), [Amedeo Modigliani](), [Babies](), [Sunglasses](), [Rafael](), [Otto Dix]() |
+| [LSUN Church]() | [Haunted house](), [Van Gogh houses](), [Landscapes]() |
+
+
+### 
 
 
 ### Evaluating FID 
