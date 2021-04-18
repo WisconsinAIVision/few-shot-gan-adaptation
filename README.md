@@ -18,7 +18,7 @@ Our method helps adapt the source GAN where one-to-one correspondence is preserv
 
 ## Testing
 
-&#8594;
+**Notations** Source GAN: G<sub>s</sub> --- Target GAN: G<sub>s&#8594;t</sub>
 
 
 ### Evaluating FID 
