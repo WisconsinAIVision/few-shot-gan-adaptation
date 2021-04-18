@@ -22,8 +22,10 @@ We provide the pre-trained models for different source and adapted (target) GAN 
 | Source GAN: G<sub>s</sub> | Target GAN: G<sub>s&#8594;t</sub> |
 | ------------------------- | --------------------------------- |
 | [FFHQ]() | [[Sketches]()] [[Caricatures]()] [[Amedeo Modigliani]()] [[Babies]()] [[Sunglasses]()] [[Rafael]()] [[Otto Dix]()] |
-| [LSUN Church]() | [[Haunted house]()] [[Van Gogh houses]() [[Landscapes]()] |
-| [LSUN Cars]() | [[Wrecked cars]()] [[Landscapes](https://arxiv.org/abs/2104.06820)] | 
+| [LSUN Church]() | [[Haunted houses]()] [[Van Gogh houses]() [[Landscapes]()] [[Caricatures]()] |
+| [LSUN Cars]() | [[Wrecked cars]()] [[Landscapes]()] [[Haunted houses]()] [[Caricatures]()] | 
+| [LSUN Horses]() | [[Landscapes]()] [[Caricatures]()] [[Haunted houses]] |
+| [Hand gestures]() | [Google Maps]() [[Landscapes]()] [] |
 
 
 ### 
