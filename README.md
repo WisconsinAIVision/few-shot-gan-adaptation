@@ -10,11 +10,15 @@ Repository for downloading the datasets and generated images used for performing
 
 ### [Project page](https://utkarshojha.github.io/few-shot-gan-adaptation/) | [Paper](https://arxiv.org/abs/2104.06820)
 
-### Overview
+## Overview
 
 <img src='imgs/method_diagram.png' width="840px"/>
 
 Our method helps adapt the source GAN where one-to-one correspondence is preserved between the source G<sub>s</sub>(z) and target G<sub>t</sub>(z) images.
+
+## Testing
+
+&#8594;
 
 
 ### Evaluating FID 
