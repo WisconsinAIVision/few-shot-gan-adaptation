@@ -25,7 +25,7 @@ We provide the pre-trained models for different source and adapted (target) GAN 
 | [LSUN Church]() | [[Haunted houses]()] [[Van Gogh houses]() [[Landscapes]()] [[Caricatures]()] |
 | [LSUN Cars]() | [[Wrecked cars]()] [[Landscapes]()] [[Haunted houses]()] [[Caricatures]()] | 
 | [LSUN Horses]() | [[Landscapes]()] [[Caricatures]()] [[Haunted houses]] |
-| [Hand gestures]() | [Google Maps]() [[Landscapes]()] [] |
+| [Hand gestures]() | [[Google Maps]()] [[Landscapes]()] |
 
 
 ### 
