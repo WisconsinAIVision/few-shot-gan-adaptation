@@ -23,6 +23,7 @@ We provide the pre-trained models for different source and adapted (target) GAN 
 | ------------------------- | --------------------------------- |
 | [FFHQ]() | [[Sketches]()] [[Caricatures]()] [[Amedeo Modigliani]()] [[Babies]()] [[Sunglasses]()] [[Rafael]()] [[Otto Dix]()] |
 | [LSUN Church]() | [[Haunted house]()] [[Van Gogh houses]() [[Landscapes]()] |
+| [LSUN Cars]() | [[Wrecked cars]()] [[Landscapes](https://arxiv.org/abs/2104.06820)] | 
 
 
 ### 
