@@ -128,6 +128,7 @@ The command will save the generated image which is closest/farthest to/from a ce
 - Below are the links to all the target domains, each consisting of 10 images, used in the paper.
 
 | Sketches | Amedeo Modigliani | Babies | Sunglasses | Rafael | Otto Dix | Haunted houses | Van Gogh houses | Landscapes | Wrecked cars | Maps |  
+| -- | -- | -- | -- | -- | -- | -- | -- | -- | -- |
 
 
 
