@@ -117,9 +117,24 @@ The command will save the generated image which is closest/farthest to/from a ce
 
 **Note** We cannot share the images for the caricature domain due to license issues.
 
-More results coming soon..
+## Training (adapting) your own GAN
+
+### Choose the source domain
+- Only the pre-trained model is needed, i.e. no need for access to the source data.
+- Refer to the first column of the pre-trained models table above.
+- If you wish to use some other source model, make sure that it follows the generator architecture defined in this [pytorch implementation](https://github.com/rosinality/stylegan2-pytorch) of StyleGAN2
+
+### Choose the target domain
+- Below are the links to all the target domains, each consisting of 10 images, used in the paper.
+| Sketches | Amedeo Modigliani | Babies | Sunglasses | Rafael | Otto Dix | Haunted houses | Van Gogh houses | Landscapes | Wrecked cars | Google maps |  
+| [images]()/[processed]()| [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | 
+
+
+
 
 ## Bibtex
+If you find our code useful, please cite our paper:
+
 ```
 @inproceedings{ojha2021few-shot-gan,
   title={Few-shot Image Generation via Cross-domain Correspondence},
