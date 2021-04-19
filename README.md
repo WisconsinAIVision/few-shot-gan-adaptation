@@ -43,15 +43,16 @@ Replace `ffhq_sketches` with any other model from the table. Furthermore, to use
 
 ### Visualizing correspondence results
 
-To visualize the same noise in the source and adapted models, i.e. G<sub>s</sub>(z) and G<sub>s&#8594;t</sub>(z), run the following command:
+To visualize the same noise in the source and adapted models, i.e. G<sub>s</sub>(z) and G<sub>s&#8594;t</sub>(z), run the following command(s):
 
-`CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_ffhq --ckpt_target ffhq_caricatures --load_noise noise.pt`
+```bash
+# generate two image grids of 5x5 for source and target
+CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_ffhq --ckpt_target ffhq_caricatures --load_noise noise.pt
 
-This will generate two image grids of 5x5 each, where corresponding locations have the same noise vector. To view the correspondence property as an interpolation results, run the following command:
+# visualize the interpolations of source and target
+CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_ffhq --ckpt_target ffhq_caricatures --load_noise noise.pt --mode interpolate
+```
 
-`CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_ffhq --ckpt_target ffhq_caricatures --load_noise noise.pt --mode interpolate`
-
-This will create the .gif file seen at the top of this page.
 
 
 ### Evaluating FID 
