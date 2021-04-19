@@ -125,9 +125,8 @@ The command will save the generated image which is closest/farthest to/from a ce
 - If you wish to use some other source model, make sure that it follows the generator architecture defined in this [pytorch implementation](https://github.com/rosinality/stylegan2-pytorch) of StyleGAN2
 
 ### Choose the target domain
-- Below are the links to all the target domains, each consisting of 10 images, used in the paper.
 
-| Source GAN: G<sub>s</sub> | Target GAN: G<sub>s&#8594;t</sub> |
+Below are the links to all the target domains, each consisting of 10 images, used in the paper.
 
 | Sketches | Amedeo Modigliani | Babies | Sunglasses | Rafael | Otto Dix | Haunted houses | Van Gogh houses | Landscapes | Wrecked cars | Maps |  
 | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- |
