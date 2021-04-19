@@ -27,9 +27,15 @@ We provide the pre-trained models for different source and adapted (target) GAN 
 | [LSUN Horses]() | [[Landscapes]()] [[Caricatures]()] [[Haunted houses]()] |
 | [Hand gestures]() | [[Google Maps]()] [[Landscapes]()] |
 
+Note that the table above contains both the realted (e.g. FFHQ/sketches) as well as unrelated source/target pairs (e.g. LSUN Cars/Haunted houses) discussed in Section 4.2 of the main paper.
 
-### 
+Download the pre-trained model(s), and store it into `./checkpoints` directory.
 
+### Sample images from a model
+
+To generate images from a pre-trained GAN, run the following command:
+
+`CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt /path/to/checkpoint --n_sample [no. of samples]`
 
 ### Evaluating FID 
 
