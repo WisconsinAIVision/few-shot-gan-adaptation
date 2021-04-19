@@ -126,8 +126,9 @@ The command will save the generated image which is closest/farthest to/from a ce
 
 ### Choose the target domain
 - Below are the links to all the target domains, each consisting of 10 images, used in the paper.
-| Sketches | Amedeo Modigliani | Babies | Sunglasses | Rafael | Otto Dix | Haunted houses | Van Gogh houses | Landscapes | Wrecked cars | Google maps |  
-| [images]()/[processed]()| [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | [images]()/[processed]() | 
+
+| Sketches | Amedeo Modigliani | Babies | Sunglasses | Rafael | Otto Dix | Haunted houses | Van Gogh houses | Landscapes | Wrecked cars | Maps |  
+
 
 
 
