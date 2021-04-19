@@ -35,11 +35,11 @@ Download the pre-trained model(s), and store it into `./checkpoints` directory.
 
 To generate images from a pre-trained GAN, run the following command:
 
-`CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_target ffhq_sketches`
+`CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_target model_name`
 
-Replace `ffhq_sketches` with any other model from the table. Furthermore, to use the noise vectors used for some figures in the paper (Figures 1-4), use the `--load_noise` option. For example:
+Here, `model_name` follows the notation of `source_target`, e.g. `ffhq_sketches`. Use the `--load_noise` option to use the noise vectors used for some figures in the paper (Figures 1-4). For example:
 
-`CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_target ffhq_sketches --load_noise noise.pt`
+`CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_target ffhq_sketches --load_noise noise.pt`
 
 ### Visualizing correspondence results
 
@@ -53,6 +53,14 @@ CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_ffhq --ckpt_targ
 CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_ffhq --ckpt_target ffhq_caricatures --load_noise noise.pt --mode interpolate
 ```
 
+### Hand gesture experiments
+
+We collected images of random hand gestures being performed on a plain surface (~ 18k images), and used that as the data to train a source model (from scratch). We then adapted it to two different target domains; Landscape images and Google maps. The goal was to see if, during inference, interpolating the hand genstures can result in meaningful variations in the target images. Run the following commands to see the results:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_hand --ckpt_target hand_maps --load_noise noise.pt --mode interpolate
+CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_hand --ckpt_target hand_landscapes --load_noise noise.pt --mode interpolate
+```
 
 
 ### Evaluating FID 
