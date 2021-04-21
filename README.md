@@ -170,8 +170,10 @@ The command will save the generated image which is closest/farthest to/from a ce
 	- This will generate the processed version of the data in `./processed_data` directory. 
 - Otherwise, if downloading directly the processed files, unzip them into `./processed_data` directory.
 - Set the training parameters in `train.py`:	
-	- `n_train` should be set to the number of training samples (default is 10).
-	- `img_freq` and `ckpt_freq` control how frequently do the intermediate generated images and intermediate models are being saved respectively.
+	- `--n_train` should be set to the number of training samples (default is 10).
+	- `--img_freq` and `ckpt_freq` control how frequently do the intermediate generated images and intermediate models are being saved respectively.
+	- `--iter` determines the total number of iterations. In our experience, adapting a source GAN on FFHQ to artistic domains (e.g. Sketches/Amedeo's paintings) delivers decent results in 4k-5k iterations. For domains closer to natural faces (e.g. Babies/Sunglasses), we get the best results in about 1k iterations.
+
 - Run the following command to adapt the source GAN (e.g. FFHQ) to the target domain (e.g. sketches):
 
 ```bash
@@ -183,6 +185,7 @@ CUDA_VISIBLE_DEVICES=0 python train.py --ckpt_source ./checkpoints/source_ffhq.p
 This will create directories with name `ffhq_to_sketches` in `./checkpoints/` (saving the intermediate models) and in `./samples` (saving the intermediate generated images). 
 
 Runnig the above code with default configurations, i.e. batch size = 4, will use ~20 GB GPU memory.  
+
 
 ## Bibtex
 If you find our code useful, please cite our paper:
