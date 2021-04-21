@@ -31,13 +31,13 @@ Our method helps adapt the source GAN where one-to-one correspondence is preserv
 We provide the pre-trained models for different source and adapted (target) GAN models. 
 | Source GAN: G<sub>s</sub> | Target GAN: G<sub>s&#8594;t</sub> |
 | ------------------------- | --------------------------------- |
-| [FFHQ](https://drive.google.com/file/d/1TQ_6x74RPQf03mSjtqUijM4MZEMyn7HI/view?usp=sharing) | [[Sketches](https://drive.google.com/file/d/1Qkdeyk_-1pqgvrIFy6AzsSYNgZMtwKX3/view?usp=sharing)] [[Caricatures](https://drive.google.com/file/d/1CX8uYEWqlZaY7or_iuLp3ZFBcsOOXMt8/view?usp=sharing)] [[Amedeo Modigliani](https://drive.google.com/file/d/1WvBtThEakKNqNFBCuHHoNNI1jojFAvan/view?usp=sharing)] [[Babies](https://drive.google.com/file/d/1d5JNwQBSyFaruAoLZBlXFVPc_I6WZjhm/view?usp=sharing)] [[Sunglasses]()] [[Rafael](https://drive.google.com/file/d/1K6xWnlfQ-qT_I_QTY8SiQ9fvRylMFeND/view?usp=sharing)] [[Otto Dix](https://drive.google.com/file/d/1I8gmuiDcARmwZNimlYEalPsKcRot-ijZ/view?usp=sharing)] |
+| [FFHQ](https://drive.google.com/file/d/1TQ_6x74RPQf03mSjtqUijM4MZEMyn7HI/view?usp=sharing) | [[Sketches](https://drive.google.com/file/d/1Qkdeyk_-1pqgvrIFy6AzsSYNgZMtwKX3/view?usp=sharing)] [[Caricatures](https://drive.google.com/file/d/1CX8uYEWqlZaY7or_iuLp3ZFBcsOOXMt8/view?usp=sharing)] [[Amedeo Modigliani](https://drive.google.com/file/d/1WvBtThEakKNqNFBCuHHoNNI1jojFAvan/view?usp=sharing)] [[Babies](https://drive.google.com/file/d/1d5JNwQBSyFaruAoLZBlXFVPc_I6WZjhm/view?usp=sharing)] [[Sunglasses](https://drive.google.com/file/d/1D6HOdcHG4j6kQmOCjwQakK7REgykPOYy/view?usp=sharing)] [[Rafael](https://drive.google.com/file/d/1K6xWnlfQ-qT_I_QTY8SiQ9fvRylMFeND/view?usp=sharing)] [[Otto Dix](https://drive.google.com/file/d/1I8gmuiDcARmwZNimlYEalPsKcRot-ijZ/view?usp=sharing)] |
 | [LSUN Church]() | [[Haunted houses]()] [[Van Gogh houses]() [[Landscapes]()] [[Caricatures]()] |
 | [LSUN Cars]() | [[Wrecked cars]()] [[Landscapes]()] [[Haunted houses]()] [[Caricatures]()] | 
 | [LSUN Horses]() | [[Landscapes]()] [[Caricatures]()] [[Haunted houses]()] |
 | [Hand gestures]() | [[Google Maps]()] [[Landscapes]()] |
 
-Note that the table above contains both the realted (e.g. FFHQ/sketches) as well as unrelated source/target pairs (e.g. LSUN Cars/Haunted houses) discussed in Section 4.2 of the main paper.
+For now, we have only included the pre-trained models using FFHQ as the source domain, i.e. all the models in the first row. We will add the remaining ones soon.
 
 Download the pre-trained model(s), and store it into `./checkpoints` directory.
 
@@ -98,6 +98,8 @@ The following table provides a link to each of these images:
 | Babies | [link](http://vision4.cs.ucdavis.edu:8001/babies_real_train.zip) | [link](http://vision4.cs.ucdavis.edu:8001/babies_real_test.zip) | [link](http://vision4.cs.ucdavis.edu:8001/babies_fake.zip) |
 | Sunglasses | [link](http://vision4.cs.ucdavis.edu:8001/sunglasses_real_train.zip) | [link](http://vision4.cs.ucdavis.edu:8001/sunglasses_real_test.zip) | [link](http://vision4.cs.ucdavis.edu:8001/sunglasses_fake.zip) |
 | Sketches | [link](http://vision4.cs.ucdavis.edu:8001/sketches_real_train.zip) | [link](http://vision4.cs.ucdavis.edu:8001/sketches_real_test.zip) | [link](http://vision4.cs.ucdavis.edu:8001/sketches_fake.zip) |
+
+The files listed above are hosted on our local server because of their big size, so if you have trouble accessing it, please create an issue.
 
 R<sub>train</sub> is given just to illustate what the algorithm sees, and **won't** be used for computing the FID score.
 
