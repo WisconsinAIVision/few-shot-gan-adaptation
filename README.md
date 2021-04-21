@@ -6,7 +6,7 @@ Adobe Research, UC Davis, UC Berkeley
 
 ![teaser](https://github.com/utkarshojha/few-shot-gan-adaptation/blob/gh-pages/resources/concept.gif)
 
-Repository for downloading the datasets and generated images used for performing the evaluations shown in Tables 1 and 2.
+PyTorch implementation of adapting a source GAN (trained on a large dataset) to a target domain using very few images.
 
 ### [Project page](https://utkarshojha.github.io/few-shot-gan-adaptation/) | [Paper](https://arxiv.org/abs/2104.06820)
 
@@ -16,12 +16,22 @@ Repository for downloading the datasets and generated images used for performing
 
 Our method helps adapt the source GAN where one-to-one correspondence is preserved between the source G<sub>s</sub>(z) and target G<sub>t</sub>(z) images.
 
+## Requirements
+
+**Note:** The base model is taken from [StyleGAN2](https://github.com/rosinality/stylegan2-pytorch)'s implementation from [@rosinality](https://github.com/rosinality)
+
+- Linux
+- NVIDIA GPU + CUDA CuDNN 10.2
+- PyTorch 1.7.0
+- Python 3.6.9
+- Install all the libraries through `pip install -r requirements.txt` 
+
 ## Testing
 
 We provide the pre-trained models for different source and adapted (target) GAN models. 
 | Source GAN: G<sub>s</sub> | Target GAN: G<sub>s&#8594;t</sub> |
 | ------------------------- | --------------------------------- |
-| [FFHQ]() | [[Sketches]()] [[Caricatures]()] [[Amedeo Modigliani]()] [[Babies]()] [[Sunglasses]()] [[Rafael]()] [[Otto Dix]()] |
+| [FFHQ](https://drive.google.com/file/d/1TQ_6x74RPQf03mSjtqUijM4MZEMyn7HI/view?usp=sharing) | [[Sketches](https://drive.google.com/file/d/1Qkdeyk_-1pqgvrIFy6AzsSYNgZMtwKX3/view?usp=sharing)] [[Caricatures](https://drive.google.com/file/d/1CX8uYEWqlZaY7or_iuLp3ZFBcsOOXMt8/view?usp=sharing)] [[Amedeo Modigliani](https://drive.google.com/file/d/1WvBtThEakKNqNFBCuHHoNNI1jojFAvan/view?usp=sharing)] [[Babies](https://drive.google.com/file/d/1d5JNwQBSyFaruAoLZBlXFVPc_I6WZjhm/view?usp=sharing)] [[Sunglasses]()] [[Rafael](https://drive.google.com/file/d/1K6xWnlfQ-qT_I_QTY8SiQ9fvRylMFeND/view?usp=sharing)] [[Otto Dix](https://drive.google.com/file/d/1I8gmuiDcARmwZNimlYEalPsKcRot-ijZ/view?usp=sharing)] |
 | [LSUN Church]() | [[Haunted houses]()] [[Van Gogh houses]() [[Landscapes]()] [[Caricatures]()] |
 | [LSUN Cars]() | [[Wrecked cars]()] [[Landscapes]()] [[Haunted houses]()] [[Caricatures]()] | 
 | [LSUN Horses]() | [[Landscapes]()] [[Caricatures]()] [[Haunted houses]()] |
@@ -35,11 +45,17 @@ Download the pre-trained model(s), and store it into `./checkpoints` directory.
 
 To generate images from a pre-trained GAN, run the following command:
 
-`CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_target model_name`
+```bash
+CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_target /path/to/model/
+```
 
 Here, `model_name` follows the notation of `source_target`, e.g. `ffhq_sketches`. Use the `--load_noise` option to use the noise vectors used for some figures in the paper (Figures 1-4). For example:
 
-`CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_target ffhq_sketches --load_noise noise.pt`
+```bash
+CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_target ./checkpoints/ffhq_sketches.pt --load_noise noise.pt
+```
+
+This will save the images in the `test_samples/` directory.
 
 ### Visualizing correspondence results
 
@@ -47,19 +63,24 @@ To visualize the same noise in the source and adapted models, i.e. G<sub>s</sub>
 
 ```bash
 # generate two image grids of 5x5 for source and target
-CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_ffhq --ckpt_target ffhq_caricatures --load_noise noise.pt
+CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_source /path/to/source --ckpt_target /path/to/target --load_noise noise.pt
 
 # visualize the interpolations of source and target
-CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_ffhq --ckpt_target ffhq_caricatures --load_noise noise.pt --mode interpolate
+CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_source /path/to/source --ckpt_target /path/to/source --load_noise noise.pt --mode interpolate
+python traversal_gif.py 10
 ```
+- The second argument when running `traversal_gif.py` denotes the number of images you want to interpolate between.
+- `--n_sample` determines the number of images to be sampled (default set to 25).
+- `--n_steps` determines the number of steps taken when interpolating from G(z<sub>1</sub>) to G(z<sub>2</sub>) (default set to 40).
+- `--mode` option determines the visualization type: generating either the images or interpolation .gif.
+- The .gif file will be saved in `gifs/` directory.
 
 ### Hand gesture experiments
 
 We collected images of random hand gestures being performed on a plain surface (~ 18k images), and used that as the data to train a source model (from scratch). We then adapted it to two different target domains; Landscape images and Google maps. The goal was to see if, during inference, interpolating the hand genstures can result in meaningful variations in the target images. Run the following commands to see the results:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_hand --ckpt_target hand_maps --load_noise noise.pt --mode interpolate
-CUDA_VISIBLE_DEVICES=0 python3 generate.py --ckpt_source source_hand --ckpt_target hand_landscapes --load_noise noise.pt --mode interpolate
+CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_source /path/to/source --ckpt_target /path/to/maps(landscapes) --load_noise noise.pt --mode interpolate
 ```
 
 
@@ -82,7 +103,9 @@ R<sub>train</sub> is given just to illustate what the algorithm sees, and **won'
 
 Download, and unzip the set of images into your desired directory, and compute the FID score (taken from [pytorch-fid](https://github.com/mseitzer/pytorch-fid)) between the real (R<sub>test</sub>) and fake (F) images, by running the following command
 
-`python -m pytorch_fid /path/to/real/images /path/to/fake/images`
+```bash
+python -m pytorch_fid /path/to/real/images /path/to/fake/images
+```
 
 ### Evaluating intra-cluster distance
 
@@ -102,14 +125,19 @@ cluster_centers
 ```
 Unzip the file, and then run the following command to compute the results for a baseline on a dataset:
 
-`CUDA_VISIBLE_DEVICES=0 python3 feat_cluster.py --baseline <baseline> --dataset <target_domain> --mode intra_cluster_dist`
+```bash
+CUDA_VISIBLE_DEVICES=0 python feat_cluster.py --baseline <baseline> --dataset <target_domain> --mode intra_cluster_dist
 
-`CUDA_VISIBLE_DEVICES=0 python3 feat_cluster.py --baseline tgan --dataset sketches --mode intra_cluster_dist`
+E.g.
+CUDA_VISIBLE_DEVICES=0 python feat_cluster.py --baseline tgan --dataset sketches --mode intra_cluster_dist
+```
 
 
 We also provide the utility to visualize the closest and farthest members of a cluster, as shown in Figure 14 (shown below), using the following command:
 
-`CUDA_VISIBLE_DEVICES=0 python3 feat_cluster.py --baseline tgan --dataset sketches --mode visualize_members`
+```bash
+CUDA_VISIBLE_DEVICES=0 python feat_cluster.py --baseline tgan --dataset sketches --mode visualize_members
+```
 
 The command will save the generated image which is closest/farthest to/from a center as `closest.png`/`farthest.png` respectively.
 
@@ -122,18 +150,37 @@ The command will save the generated image which is closest/farthest to/from a ce
 ### Choose the source domain
 - Only the pre-trained model is needed, i.e. no need for access to the source data.
 - Refer to the first column of the pre-trained models table above.
-- If you wish to use some other source model, make sure that it follows the generator architecture defined in this [pytorch implementation](https://github.com/rosinality/stylegan2-pytorch) of StyleGAN2
+- If you wish to use some other source model, make sure that it follows the generator architecture defined in this [pytorch implementation](https://github.com/rosinality/stylegan2-pytorch) of StyleGAN2.
 
 ### Choose the target domain
 
-Below are the links to all the target domains, each consisting of 10 images, used in the paper.
+- Below are the links to all the target domains, each consisting of 10 images, used in the paper.
+
 
 | Sketches | Amedeo Modigliani | Babies | Sunglasses | Rafael | Otto Dix | Haunted houses | Van Gogh houses | Landscapes | Wrecked cars | Maps |  
-| -- | -- | -- | -- | -- | -- | -- | -- | -- | -- |
+| -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- |
+| [images]() | [images]() | [images]() | [images]() | [images]() | [images]() | [images]() | [images]() | [images]() | [images]() | [images]() |
+| [processed]() | [processed]() | [processed]() | [processed]() | [processed]() | [processed]() | [processed]() | [processed]() | [processed]() | [processed]() | [processed]() |
 
 
+- If downloading the raw images, unzip them into `./raw_data` folder.
+	- Run `python prepare_data.py --out processed_data/<dataset_name> --size 256 ./raw_data/<dataset_name>`
+	- This will generate the processed version of the data in `./processed_data` directory. 
+- Otherwise, if downloading directly the processed files, unzip them into `./processed_data` directory.
+- Set the training parameters in `train.py`:	
+	- `n_train` should be set to the number of training samples (default is 10).
+	- `img_freq` and `ckpt_freq` control how frequently do the intermediate generated images and intermediate models are being saved respectively.
+- Run the following command to adapt the source GAN (e.g. FFHQ) to the target domain (e.g. sketches):
 
+```bash
+CUDA_VISIBLE_DEVICES=0 python train.py --ckpt_source /path/to/source_model --data_path /path/to/target_data --exp <exp_name>
 
+# sample run
+CUDA_VISIBLE_DEVICES=0 python train.py --ckpt_source ./checkpoints/source_ffhq.pt --data_path ./processed_data/sketches --exp ffhq_to_sketches    
+```
+This will create directories with name `ffhq_to_sketches` in `./checkpoints/` (saving the intermediate models) and in `./samples` (saving the intermediate generated images). 
+
+Runnig the above code with default configurations, i.e. batch size = 4, will use ~20 GB GPU memory.  
 
 ## Bibtex
 If you find our code useful, please cite our paper:
