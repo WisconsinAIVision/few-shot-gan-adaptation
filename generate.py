@@ -88,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument('--truncation_mean', type=int, default=4096)
     parser.add_argument('--ckpt_source', type=str, default=None)
     parser.add_argument('--ckpt_target', type=str, default=None)
-    parser.add_argument('--mode', type=str, default='viz_image')
+    parser.add_argument('--mode', type=str, default='viz_imgs')
     parser.add_argument('--load_noise', type=str, default=None)
     parser.add_argument('--channel_multiplier', type=int, default=2)
     torch.manual_seed(10)
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
     if args.truncation < 1:
         with torch.no_grad():
-            mean_latent = g_ema.mean_latent(args.truncation_mean)
+            mean_latent = g_source.mean_latent(args.truncation_mean)
     else:
         mean_latent = None
     if args.mode == 'viz_imgs':
