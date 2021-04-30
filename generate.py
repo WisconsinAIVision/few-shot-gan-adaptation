@@ -17,7 +17,7 @@ def generate_gif(args, g_list, device, mean_latent):
         if len(g_list) > 1:
             g_ema2.eval()
 
-        z_set = torch.load('init_z.pt')
+        z_set = torch.load('noise.pt')
 
         n_steps = args.n_steps
         step = float(1)/n_steps
