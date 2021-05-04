@@ -54,13 +54,14 @@ def generate_gif(args, g_list, device, mean_latent):
 def generate_imgs(args, g_list, device, mean_latent):
 
     with torch.no_grad():
+         if args.load_noise:
+            sample_z = torch.load(args.load_noise)
+         else:
+            sample_z = torch.randn(args.n_sample, args.latent, device=device)
+                
         for i in range(len(g_list)):
             g_test = g_list[i]
             g_test.eval()
-            if args.load_noise:
-                sample_z = torch.load(args.load_noise)
-            else:
-                sample_z = torch.randn(args.n_sample, args.latent, device=device)
 
             sample, _ = g_test([sample_z], truncation=args.truncation, truncation_latent=mean_latent, input_is_latent=False, randomize_noise=False)
             if i == 0:
