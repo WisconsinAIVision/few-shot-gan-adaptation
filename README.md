@@ -145,7 +145,6 @@ The command will save the generated image which is closest/farthest to/from a ce
 
 <img src='imgs/cluster_members.png' width="840px"/>
 
-**Note** We cannot share the images for the caricature domain due to license issues.
 
 ## Training (adapting) your own GAN
 
@@ -164,6 +163,7 @@ The command will save the generated image which is closest/farthest to/from a ce
 | [images](https://drive.google.com/file/d/1hC5mYgaamaLU9Jyi-WKtK1MoLhyc26kD/view?usp=sharing) | [images](https://drive.google.com/file/d/1D5X2hr7Z6EnY9HoxaGJb_vEvDVpSzjbz/view?usp=sharing) | [images](https://drive.google.com/file/d/1JygAunIzpMyRA9kPXobWSuwzVw7oOHU6/view?usp=sharing) | [images](https://drive.google.com/file/d/1sKPDlARZeWaHBJ3t3IIrSp295J_ct1cC/view?usp=sharing) | [images](https://drive.google.com/file/d/1EyRl-kR51ijOeGLR3ooc4t7iXlzW_VEc/view?usp=sharing) | [images](https://drive.google.com/file/d/1O7sizhlHPfeAYVT84gACgPNrD7tdk0Y_/view?usp=sharing) | [images](https://drive.google.com/file/d/1dbW-HTDT82t0ORkA0vlHcOX6dCyccqgu/view?usp=sharing) | [images](https://drive.google.com/file/d/1k5x76NvJRFd-XDSoZTDRtL_IdWD8_VKK/view?usp=sharing) | [images](https://drive.google.com/file/d/1zYw3iTc2NM6LStHpM8sscq24EDwNkEsy/view?usp=sharing) | [images](https://drive.google.com/file/d/1IBv1cwPaCFDUDvn9fo8KoCSaZ3s6bsFX/view?usp=sharing) | [images](https://drive.google.com/file/d/1qwVK2i7F7N4DJP3UdT-qkM7eTDmD7EJH/view?usp=sharing) |
 | [processed](https://drive.google.com/file/d/1fe9VVAv2yTP2WMrXLBZXxZUAEfUXzQOK/view?usp=sharing) | [processed](https://drive.google.com/file/d/1y7wZ4BxqmCnBM9DqS1gBnkPawttWdcJ_/view?usp=sharing) | [processed](https://drive.google.com/file/d/1YjL9X5IbGVKinpqcL8o-H69g4skmOIfV/view?usp=sharing) | [processed](https://drive.google.com/file/d/1sKPDlARZeWaHBJ3t3IIrSp295J_ct1cC/view?usp=sharing) | [processed](https://drive.google.com/file/d/1NP44jz9zRPiWegFNY3KieaKYftxgmC-r/view?usp=sharing) | [processed](https://drive.google.com/file/d/1O7sizhlHPfeAYVT84gACgPNrD7tdk0Y_/view?usp=sharing) | [processed](https://drive.google.com/file/d/1K1s7Mi8D-k7U-W6BQ7f02TpA14OPnEDl/view?usp=sharing) | [processed](https://drive.google.com/file/d/1wJMwtMifGMDI8Io5tCeXhjiuYjOFhhD7/view?usp=sharing) | [processed](https://drive.google.com/file/d/1VBuh37h6Og5Qr_T3EvEYJYtH5pwTbE0B/view?usp=sharing) | [processed](https://drive.google.com/file/d/1KJXoXk_7qdJookTeqqpHiWrDTtR2EKLL/view?usp=sharing) | [processed](https://drive.google.com/file/d/1jDWaIuOfxk21ReD1UFY5zcXLB1XW-K9a/view?usp=sharing) |
 
+**Note** We cannot share the images for the caricature domain due to license issues.
 
 - If downloading the raw images, unzip them into `./raw_data` folder.
 	- Run `python prepare_data.py --out processed_data/<dataset_name> --size 256 ./raw_data/<dataset_name>`
