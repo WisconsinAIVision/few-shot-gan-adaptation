@@ -86,22 +86,13 @@ CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_source /path/to/source --ckpt_t
 
 ### Evaluating FID 
 
-There are three sets of images which are used to get the results in Table 1:
-- A set of real images from a target domain -- R<sub>test</sub> 
-- 10 images from the above set (R<sub>test</sub>) used to train the algorithm -- R<sub>train</sub>
-- 5000 generated images using the GAN-based method -- F
 
-The following table provides a link to each of these images:
+The following table provides a link to the test set of domains used in Table 1:
 
-| | R<sub>train</sub> | R<sub>test</sub> | F |
-|-- | ------ | ------- | ------------------------------|
-| Babies | [link](http://vision4.cs.ucdavis.edu:8001/babies_real_train.zip) | [link](http://vision4.cs.ucdavis.edu:8001/babies_real_test.zip) | [link](http://vision4.cs.ucdavis.edu:8001/babies_fake.zip) |
-| Sunglasses | [link](http://vision4.cs.ucdavis.edu:8001/sunglasses_real_train.zip) | [link](http://vision4.cs.ucdavis.edu:8001/sunglasses_real_test.zip) | [link](http://vision4.cs.ucdavis.edu:8001/sunglasses_fake.zip) |
-| Sketches | [link](http://vision4.cs.ucdavis.edu:8001/sketches_real_train.zip) | [link](http://vision4.cs.ucdavis.edu:8001/sketches_real_test.zip) | [link](http://vision4.cs.ucdavis.edu:8001/sketches_fake.zip) |
+| Babies | [link](https://drive.google.com/file/d/1JmjKBq_wylJmpCQ2OWNMy211NFJhHHID/view?usp=sharing) |
+| Sunglasses | [link](https://drive.google.com/file/d/1Uu5y_y8Rjxbj2VEzvT3aBHyn4pltFgyX/view?usp=sharing) |
+| Sketches | [link](https://drive.google.com/file/d/1vgsB7ji-cLVzRhx43DvNSDgV5Up3jFJ2/view?usp=sharing) |
 
-The files listed above are hosted on our local server because of their big size, so if you have trouble accessing it, please create an issue.
-
-R<sub>train</sub> is given just to illustate what the algorithm sees, and **won't** be used for computing the FID score.
 
 Download, and unzip the set of images into your desired directory, and compute the FID score (taken from [pytorch-fid](https://github.com/mseitzer/pytorch-fid)) between the real (R<sub>test</sub>) and fake (F) images, by running the following command
 
