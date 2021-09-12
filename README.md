@@ -89,9 +89,9 @@ CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_source /path/to/source --ckpt_t
 
 The following table provides a link to the test set of domains used in Table 1:
 
-| Babies | [link](https://drive.google.com/file/d/1JmjKBq_wylJmpCQ2OWNMy211NFJhHHID/view?usp=sharing) |
-| Sunglasses | [link](https://drive.google.com/file/d/1Uu5y_y8Rjxbj2VEzvT3aBHyn4pltFgyX/view?usp=sharing) |
-| Sketches | [link](https://drive.google.com/file/d/1vgsB7ji-cLVzRhx43DvNSDgV5Up3jFJ2/view?usp=sharing) |
+- Babies -- [link](https://drive.google.com/file/d/1JmjKBq_wylJmpCQ2OWNMy211NFJhHHID/view?usp=sharing) |
+- Sunglasses -- [link](https://drive.google.com/file/d/1Uu5y_y8Rjxbj2VEzvT3aBHyn4pltFgyX/view?usp=sharing) |
+- Sketches -- [link](https://drive.google.com/file/d/1vgsB7ji-cLVzRhx43DvNSDgV5Up3jFJ2/view?usp=sharing) |
 
 
 Download, and unzip the set of images into your desired directory, and compute the FID score (taken from [pytorch-fid](https://github.com/mseitzer/pytorch-fid)) between the real (R<sub>test</sub>) and fake (F) images, by running the following command
