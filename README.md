@@ -32,10 +32,10 @@ We provide the pre-trained models for different source and adapted (target) GAN 
 | Source GAN: G<sub>s</sub> | Target GAN: G<sub>s&#8594;t</sub> |
 | ------------------------- | --------------------------------- |
 | [FFHQ](https://drive.google.com/file/d/1TQ_6x74RPQf03mSjtqUijM4MZEMyn7HI/view?usp=sharing) | [[Sketches](https://drive.google.com/file/d/1Qkdeyk_-1pqgvrIFy6AzsSYNgZMtwKX3/view?usp=sharing)] [[Caricatures](https://drive.google.com/file/d/1CX8uYEWqlZaY7or_iuLp3ZFBcsOOXMt8/view?usp=sharing)] [[Amedeo Modigliani](https://drive.google.com/file/d/1WvBtThEakKNqNFBCuHHoNNI1jojFAvan/view?usp=sharing)] [[Babies](https://drive.google.com/file/d/1d5JNwQBSyFaruAoLZBlXFVPc_I6WZjhm/view?usp=sharing)] [[Sunglasses](https://drive.google.com/file/d/1D6HOdcHG4j6kQmOCjwQakK7REgykPOYy/view?usp=sharing)] [[Rafael](https://drive.google.com/file/d/1K6xWnlfQ-qT_I_QTY8SiQ9fvRylMFeND/view?usp=sharing)] [[Otto Dix](https://drive.google.com/file/d/1I8gmuiDcARmwZNimlYEalPsKcRot-ijZ/view?usp=sharing)] |
-| [LSUN Church]() | [[Haunted houses]()] [[Van Gogh houses]() [[Landscapes]()] [[Caricatures]()] |
-| [LSUN Cars]() | [[Wrecked cars]()] [[Landscapes]()] [[Haunted houses]()] [[Caricatures]()] | 
-| [LSUN Horses]() | [[Landscapes]()] [[Caricatures]()] [[Haunted houses]()] |
-| [Hand gestures]() | [[Google Maps]()] [[Landscapes]()] |
+| [LSUN Church](https://drive.google.com/file/d/18NlBBI8a61aGBHA1Tr06DQYlf-DRrBOH/view?usp=sharing) | [[Haunted houses]()] [[Van Gogh houses]() [[Landscapes]()] [[Caricatures]()] |
+| [LSUN Cars](https://drive.google.com/file/d/1O-yWYNvuMmirN8Q0Z4meYoSDtBfJEjGc/view?usp=sharing) | [[Wrecked cars]()] [[Landscapes]()] [[Haunted houses]()] [[Caricatures]()] | 
+| [LSUN Horses](https://drive.google.com/file/d/1ED4JPQsxnBUMFHiooCL7oK2x4FfIf-bt/view?usp=sharing) | [[Landscapes]()] [[Caricatures]()] [[Haunted houses]()] |
+| [Hand gestures](https://drive.google.com/file/d/1LBXphEMT8C2JJ3AXf2CETeIFvoAz5n2T/view?usp=sharing) | [[Google Maps]()] [[Landscapes]()] |
 
 For now, we have only included the pre-trained models using FFHQ as the source domain, i.e. all the models in the first row. We will add the remaining ones soon.
 
