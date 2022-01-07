@@ -55,7 +55,15 @@ Here, `model_name` follows the notation of `source_target`, e.g. `ffhq_sketches`
 CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_target ./checkpoints/ffhq_sketches.pt --load_noise noise.pt
 ```
 
-This will save the images in the `test_samples/` directory.
+This will save the images in the `test_samples/` directory.  
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python generate.py --ckpt_target ./checkpoints/ffhq_babies.pt --n_samples 100 --mode individual
+```
+This will generate individual `--n_samples` images from `--ckpt_target` and save the images in the `individual_samples/` directory.  
+This individually generated images will be used to compute FID scores.  
+  
+  
 
 ### Visualizing correspondence results
 

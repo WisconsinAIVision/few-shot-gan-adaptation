@@ -52,7 +52,6 @@ def generate_gif(args, g_list, device, mean_latent):
 
 
 def generate_imgs(args, g_list, device, mean_latent):
-
     with torch.no_grad():
         for i in range(len(g_list)):
             g_test = g_list[i]
@@ -75,6 +74,21 @@ def generate_imgs(args, g_list, device, mean_latent):
          normalize=True,
          range=(-1, 1),
          )
+
+def generate_individual_imgs(args,g_list,device,mean_latent):
+    with torch.no_grad():
+        for i in range(len(g_list)):
+            g_test=g_list[i]
+            g_test.eval()
+            for j in range(args.n_sample):
+                sample_z=torch.randn(1, args.latent, device=device)
+                sample, _ = g_test([sample_z], truncation=args.truncation, truncation_latent=mean_latent, input_is_latent=False, randomize_noise=False)
+                utils.save_image(
+                    sample,
+                    f'individual_samples/gen%d_%d.png' % (i,j),
+                    normalize=True,
+                    range=(-1,1),
+                )
 
 if __name__ == '__main__':
     device = 'cuda'
@@ -128,4 +142,5 @@ if __name__ == '__main__':
         generate_imgs(args, g_list, device, mean_latent)
     elif args.mode == 'interpolate':
         generate_gif(args, g_list, device, mean_latent)
-
+    elif args.mode == 'individual':
+        generate_individual_imgs(args, g_list, device, mean_latent)
