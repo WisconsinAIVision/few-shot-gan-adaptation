@@ -1,5 +1,5 @@
 from io import BytesIO
-
+import numpy as np
 import lmdb
 from PIL import Image
 from torch.utils.data import Dataset
@@ -30,11 +30,17 @@ class MultiResolutionDataset(Dataset):
 
     def __getitem__(self, index):
         with self.env.begin(write=False) as txn:
-            key = f'{self.resolution}-{str(index).zfill(5)}'.encode('utf-8')
-            img_bytes = txn.get(key)
+            key = f'{self.resolution}-{str(index).zfill(6)}'.encode('utf-8')
+            # binary files in database
+            #now change to numpy array
+            img_str = txn.get(key)
+            img_np=np.fromstring(img_str,dtype=np.float32).reshape((self.resolution,self.resolution))
 
-        buffer = BytesIO(img_bytes)
-        img = Image.open(buffer)
-        img = self.transform(img)
+        #first read the binary file
+        #buffer = BytesIO(img_bytes)
+        #then open the binary file, get an image object
+        #img = Image.open(buffer)
+        #apply some transform, which is useless in our case.
+        img = self.transform(img_np)
 
         return img

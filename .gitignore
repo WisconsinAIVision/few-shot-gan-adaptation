@@ -8,5 +8,5 @@ __pycache__/viz.cpython-38.pyc
 op/__pycache__/__init__.cpython-38.pyc
 op/__pycache__/fused_act.cpython-38.pyc
 op/__pycache__/upfirdn2d.cpython-38.pyc
-samples/z7toz8/*
-checkpoints/z7toz8/*
+samples/*
+checkpoints/*

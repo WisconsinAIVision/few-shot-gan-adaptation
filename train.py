@@ -35,7 +35,29 @@ from distributed import (
     get_world_size,
 )
 from non_leaking import augment
+#use matplotlib as substitution
+from matplotlib import pyplot as plt
+def save_image(tensor, fp, nrow=8, padding=2,
+               normalize=False, range=None, scale_each=False, pad_value=0, format=None):
+    """Save a given Tensor into an image file.
 
+    Args:
+        tensor (Tensor or list): Image to be saved. If given a mini-batch tensor,
+            saves the tensor as a grid of images by calling ``make_grid``.
+        fp - A filename(string) or file object
+        format(Optional):  If omitted, the format to use is determined from the filename extension.
+            If a file object was used instead of a filename, this parameter should always be used.
+        **kwargs: Other arguments are documented in ``make_grid``.
+    """
+    from PIL import Image
+    grid = utils.make_grid(tensor, nrow=nrow, padding=padding, pad_value=pad_value,
+                     normalize=normalize, range=range, scale_each=scale_each)
+    # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
+    ndarr = grid.to('cpu', torch.float32).numpy()
+    plt.imshow(ndarr[0],vmin=0,vmax=3*np.std(ndarr[0]))
+    plt.colorbar()
+    plt.savefig(fp, format=format,dpi=500,bbox_inches='tight')
+    plt.close()
 
 def data_sampler(dataset, shuffle, distributed):
     if distributed:
@@ -420,11 +442,11 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
                     g_ema.eval()
                     sample, _ = g_ema([sample_z.data])
                     sample_subz, _ = g_ema([sub_region_z.data])
-                    utils.save_image(
+                    save_image(
                         sample,
                         f"%s/{str(i).zfill(6)}.png" % (imsave_path),
                         nrow=int(args.n_sample ** 0.5),
-                        normalize=True,
+                        normalize=False,
                         range=(-1, 1),
                     )
                     del sample
@@ -486,8 +508,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    torch.manual_seed(1)
-    random.seed(1)
+    torch.manual_seed(42)
+    random.seed(42)
 
     n_gpu = 4
     args.distributed = n_gpu > 1
@@ -580,10 +602,10 @@ if __name__ == "__main__":
 
     transform = transforms.Compose(
         [
-            transforms.RandomHorizontalFlip(),
+            #transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(
-                (0.5, 0.5, 0.5), (0.5, 0.5, 0.5), inplace=True),
+            #transforms.Normalize(
+            #    (0.5, 0.5, 0.5), (0.5, 0.5, 0.5), inplace=True),
         ]
     )
 

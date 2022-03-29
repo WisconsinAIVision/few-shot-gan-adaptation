@@ -343,6 +343,7 @@ class StyledConv(nn.Module):
         return out
 
 
+#modified, actually should be named as To21cm
 class ToRGB(nn.Module):
     def __init__(self, in_channel, style_dim, upsample=True, blur_kernel=[1, 3, 3, 1]):
         super().__init__()
@@ -350,8 +351,8 @@ class ToRGB(nn.Module):
         if upsample:
             self.upsample = Upsample(blur_kernel)
 
-        self.conv = ModulatedConv2d(in_channel, 3, 1, style_dim, demodulate=False)
-        self.bias = nn.Parameter(torch.zeros(1, 3, 1, 1))
+        self.conv = ModulatedConv2d(in_channel, 1, 1, style_dim, demodulate=False)
+        self.bias = nn.Parameter(torch.zeros(1, 1, 1, 1))
 
     def forward(self, input, style, skip=None):
         out = self.conv(input, style)
@@ -644,7 +645,7 @@ class Discriminator(nn.Module):
             1024: 16 * channel_multiplier,
         }
 
-        convs = [ConvLayer(3, channels[size], 1)]
+        convs = [ConvLayer(1, channels[size], 1)]
 
         log_size = int(math.log(size, 2))
 
@@ -722,7 +723,7 @@ class Patch_Discriminator(nn.Module):
             1024: 16 * channel_multiplier,
         }
 
-        convs = [ConvLayer(3, channels[size], 1)]
+        convs = [ConvLayer(1, channels[size], 1)]
 
         log_size = int(math.log(size, 2))
 
