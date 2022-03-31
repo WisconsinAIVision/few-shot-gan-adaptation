@@ -1,5 +1,6 @@
 import argparse
 import random
+import os
 import torch
 import torch.nn as nn
 from torchvision import utils
@@ -7,6 +8,7 @@ from model import Generator
 from tqdm import tqdm
 import sys
 from train import save_image
+import numpy as np
 
 def generate_gif(args, g_list, device, mean_latent):
     g_ema = g_list[0]
@@ -68,14 +70,49 @@ def generate_imgs(args, g_list, device, mean_latent):
                 tot_img = sample
             else:
                 tot_img = torch.cat([tot_img, sample], dim = 0)
+        if args.save_format=='png':
+            save_image(
+            tot_img,
+            os.path.join(args.out,f'test_sample/sample.png'),
+            nrow=5,
+            normalize=False,
+            range=(-1, 1),
+            )
+        elif args.save_format=='npy':
+            ndarr = tot_img.to('cpu', torch.float32).numpy()
+            print(np.shape(ndarr))
+            sample_source=ndarr[0:args.n_sample]
+            sample_target=ndarr[args.n_sample:2*args.n_sample]
+            np.save(os.path.join(args.out,f'test_sample/sample_source.npy'),sample_source)
+            np.save(os.path.join(args.out,f'test_sample/sample_target.npy'),sample_target)
 
-        save_image(
-         tot_img,
-         f'test_sample/sample.png',
-         nrow=5,
-         normalize=False,
-         range=(-1, 1),
-         )
+#define a function to generate massive images
+def generate_massimgs(args, g_list, device, mean_latent):
+
+    with torch.no_grad():
+        for i in range(len(g_list)):
+            g_test = g_list[i]
+            g_test.eval()
+            for j in range(int(args.n_sample/100)):
+                if args.load_noise:
+                    sample_z = torch.load(args.load_noise)
+                else:
+                    sample_z = torch.randn(100, args.latent, device=device)
+
+                sample, _ = g_test([sample_z.data], truncation=args.truncation, truncation_latent=mean_latent,randomize_noise=True)
+                if i == 0 and j == 0:
+                    tot_img = sample
+                else:
+                    tot_img = torch.cat([tot_img, sample], dim = 0)
+        
+        if args.save_format=='npy':
+            ndarr = tot_img.to('cpu', torch.float32).numpy()
+            print(np.shape(ndarr))
+            sample_source=ndarr[0:args.n_sample]
+            sample_target=ndarr[args.n_sample:2*args.n_sample]
+            np.save(os.path.join(args.out,f'test_sample/sample_source.npy'),sample_source)
+            np.save(os.path.join(args.out,f'test_sample/sample_target.npy'),sample_target)
+    
 
 if __name__ == '__main__':
     device = 'cuda'
@@ -83,6 +120,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--size', type=int, default=256)
+    # if n_sample >500, then it must be a multiplier of 100
     parser.add_argument('--n_sample', type=int, default=25, help='number of fake images to be sampled')
     parser.add_argument('--n_steps', type=int, default=40, help="determines the granualarity of interpolation")
     parser.add_argument('--truncation', type=float, default=1)
@@ -92,6 +130,10 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=str, default='viz_imgs')
     parser.add_argument('--load_noise', type=str, default=None)
     parser.add_argument('--channel_multiplier', type=int, default=2)
+    #add an argument to save images 
+    parser.add_argument('--save_format', type=str, default='png')
+    #output directory
+    parser.add_argument('--out', type=str, default='./')
     torch.manual_seed(42)
     random.seed(42)
     args = parser.parse_args()
@@ -125,7 +167,9 @@ if __name__ == '__main__':
             mean_latent = g_source.mean_latent(args.truncation_mean)
     else:
         mean_latent = None
-    if args.mode == 'viz_imgs':
+    if args.n_sample > 500:
+        generate_massimgs(args, g_list, device, mean_latent)
+    elif args.mode == 'viz_imgs':
         generate_imgs(args, g_list, device, mean_latent)
     elif args.mode == 'interpolate':
         generate_gif(args, g_list, device, mean_latent)
