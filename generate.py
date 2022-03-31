@@ -6,6 +6,7 @@ from torchvision import utils
 from model import Generator
 from tqdm import tqdm
 import sys
+from train import save_image
 
 def generate_gif(args, g_list, device, mean_latent):
     g_ema = g_list[0]
@@ -40,10 +41,10 @@ def generate_gif(args, g_list, device, mean_latent):
                         [z], truncation=args.truncation, truncation_latent=mean_latent, randomize_noise=False)
                     sample = torch.cat((sample, sample2), dim=3)
 
-                utils.save_image(
+                save_image(
                     sample,
                     f'traversals/sample%d.png' % ((t*n_steps) + i),
-                    normalize=True,
+                    normalize=False,
                     range=(-1, 1),
                 )
 
@@ -62,17 +63,17 @@ def generate_imgs(args, g_list, device, mean_latent):
             else:
                 sample_z = torch.randn(args.n_sample, args.latent, device=device)
 
-            sample, _ = g_test([sample_z], truncation=args.truncation, truncation_latent=mean_latent, input_is_latent=False, randomize_noise=False)
+            sample, _ = g_test([sample_z.data], truncation=args.truncation, truncation_latent=mean_latent,randomize_noise=True)
             if i == 0:
                 tot_img = sample
             else:
                 tot_img = torch.cat([tot_img, sample], dim = 0)
 
-        utils.save_image(
+        save_image(
          tot_img,
          f'test_sample/sample.png',
          nrow=5,
-         normalize=True,
+         normalize=False,
          range=(-1, 1),
          )
 
@@ -91,8 +92,8 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=str, default='viz_imgs')
     parser.add_argument('--load_noise', type=str, default=None)
     parser.add_argument('--channel_multiplier', type=int, default=2)
-    torch.manual_seed(10)
-    random.seed(10)
+    torch.manual_seed(42)
+    random.seed(42)
     args = parser.parse_args()
 
     args.latent = 512

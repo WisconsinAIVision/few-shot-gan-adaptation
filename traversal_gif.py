@@ -1,5 +1,6 @@
 import imageio
-from scipy.misc import imresize
+#from imageio import imread
+#from scipy.misc import imresize
 import sys
 
 n_points = int(sys.argv[1])

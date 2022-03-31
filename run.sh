@@ -1,11 +1,14 @@
-#PBS -N styleGAN
+#PBS -N fewshotGAN
 #PBS -j oe
 #PBS -l select=1:ncpus=4:mem=20gb:ngpus=2
 
-cd /work/dkn16/stylegan2-pytorch/
+cd /work/dkn16/few-shot-gan-adaptation/
 source activate PyTorch-1.4.0
 export PYTHONPATH=/home/dkn16/tf/lib/python3.8/site-packages/:/home/dkn16/.local/lib/python3.7/site-packages/:$PYTHONPATH
-python prepare_21cmdata.py --out /scratch/dkn16/lmdb_ada  --size 64 /scratch/dkn16/dataset/z8
+#python prepare_21cmdata.py --out /scratch/dkn16/lmdb_ada  --size 64 /scratch/dkn16/dataset/z8
+#CUDA_VISIBLE_DEVICES=5,6 python train.py --ckpt ../stylegan2-pytorch/checkpoint/110000.pt --data_path /scratch/dkn16/lmdb_ada --exp z7_to_z8 --size 64 --source_key 110000 --iter 115000
+#CUDA_VISIBLE_DEVICES=5 python generate.py --ckpt_source ../stylegan2-pytorch/checkpoint/110000.pt --ckpt_target ./checkpoints/z7_to_z8/115000.pt --size 64 --mode interpolate
+python traversal_gif.py 10
 # python -m torch.distributed.launch --nproc_per_node=2 --master_port=38726 train.py --iter 110001 --batch 64 --size 64 /scratch/dkn16/lmdb --ckpt ./checkpoint/100000.pt
 # python generate.py --sample 8 --pics 8 --ckpt ./checkpoint/100000.pt --size 64
 # python closed_form_factorization.py ./checkpoint/100000.pt
