@@ -15,7 +15,56 @@ import viz
 from copy import deepcopy
 import numpy
 
+class RandomFlip(object):
+    """Horizontally flip the given numpy Image randomly with a given probability.
 
+    Args:
+        p (float): probability of the image being flipped. Default value is 0.5
+    """
+
+    def __init__(self, p=0.5):
+        self.p = p
+
+    def __call__(self, img):
+        """
+        Args:
+            img (numpy array): Image to be flipped.
+
+        Returns:
+            PIL Image: Randomly flipped image.
+        """
+        if random.random() < self.p:
+            img = np.flip(img,axis=0)
+        if random.random() < self.p:
+            img = np.flip(img,axis=1)
+        return np.ascontiguousarray(img)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(p={})'.format(self.p)
+
+class RandomRotate(object):
+    """Horizontally flip the given PIL Image randomly with a given probability.
+
+    Args:
+        p (float): probability of the image being flipped. Default value is 0.5
+    """
+
+    def __init__(self, p=0.5):
+        self.p = p
+
+    def __call__(self, img):
+        """
+        Args:
+            img (PIL Image): Image to be flipped.
+
+        Returns:
+            PIL Image: Randomly flipped image.
+        """
+        
+        return np.ascontiguousarray(np.rot90(img,random.randint(0,3)))
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(p={})'.format(self.p)
 
 try:
     import wandb
@@ -602,7 +651,8 @@ if __name__ == "__main__":
 
     transform = transforms.Compose(
         [
-            #transforms.RandomHorizontalFlip(),
+            RandomFlip(),
+            RandomRotate(),
             transforms.ToTensor(),
             #transforms.Normalize(
             #    (0.5, 0.5, 0.5), (0.5, 0.5, 0.5), inplace=True),
