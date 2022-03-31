@@ -47,7 +47,7 @@ def generate_gif(args, g_list, device, mean_latent):
                     sample,
                     f'traversals/sample%d.png' % ((t*n_steps) + i),
                     normalize=False,
-                    range=(-1, 1),
+                    range=(0, 30),
                 )
 
 

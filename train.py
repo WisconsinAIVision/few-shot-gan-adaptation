@@ -103,9 +103,14 @@ def save_image(tensor, fp, nrow=8, padding=2,
                      normalize=normalize, range=range, scale_each=scale_each)
     # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
     ndarr = grid.to('cpu', torch.float32).numpy()
-    plt.imshow(ndarr[0],vmin=0,vmax=3*np.std(ndarr[0]))
+    if normalize==False and range[1]>1:
+        vmax=range[1]
+        vmin=range[0]
+    else:
+        vmax=3*np.std(ndarr[0])
+    plt.imshow(ndarr[0],vmin=vmin,vmax=vmax)
     plt.colorbar()
-    plt.savefig(fp, format=format,dpi=500,bbox_inches='tight')
+    plt.savefig(fp, format=format,dpi=300,bbox_inches='tight')
     plt.close()
 
 def data_sampler(dataset, shuffle, distributed):
