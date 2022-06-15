@@ -108,6 +108,7 @@ def save_image(tensor, fp, nrow=8, padding=2,
         vmin=range[0]
     else:
         vmax=3*np.std(ndarr[0])
+        vmin=0
     plt.imshow(ndarr[0],vmin=vmin,vmax=vmax)
     plt.colorbar()
     plt.savefig(fp, format=format,dpi=300,bbox_inches='tight')
