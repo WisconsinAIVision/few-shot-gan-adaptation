@@ -86,8 +86,8 @@ from distributed import (
 from non_leaking import augment
 #use matplotlib as substitution
 from matplotlib import pyplot as plt
-def save_image(tensor, fp, nrow=8, padding=2,
-               normalize=False, range=None, scale_each=False, pad_value=0, format=None):
+def save_image(tensor, latent, fp, nrow=8, padding=2,
+               normalize=False, range=None, scale_each=False, pad_value=0, format=None,use_wandb = False, iteration = 0):
     """Save a given Tensor into an image file.
 
     Args:
@@ -103,15 +103,19 @@ def save_image(tensor, fp, nrow=8, padding=2,
                      normalize=normalize, range=range, scale_each=scale_each)
     # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
     ndarr = grid.to('cpu', torch.float32).numpy()
-    if normalize==False and range[1]>1:
-        vmax=range[1]
-        vmin=range[0]
-    else:
-        vmax=3*np.std(ndarr[0])
-        vmin=0
-    plt.imshow(ndarr[0],vmin=vmin,vmax=vmax)
+    latent=latent.to('cpu', torch.float32).numpy()
+    plt.figure(figsize=(10,14))
+    plt.imshow(ndarr[0],vmin=0,vmax=3*np.std(ndarr[0]))
+    y_ticks=[]
+    y_str=[]
+    for i in [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]:
+        y_ticks.append(32+i*66)
+        y_str.append('{:.3f}'.format(latent[i][0]*2+4)+','+'{:.1f}'.format(10**(latent[i][1]*1.398+1)))
+    plt.yticks(y_ticks,y_str)
     plt.colorbar()
     plt.savefig(fp, format=format,dpi=300,bbox_inches='tight')
+    if use_wandb:
+        wandb.log({'plt':wandb.Image(fp)},step=iteration)
     plt.close()
 
 def data_sampler(dataset, shuffle, distributed):
@@ -192,12 +196,22 @@ def make_noise(batch, latent_dim, n_noise, device):
     return noises
 
 
-def mixing_noise(batch, latent_dim, prob, device):
+def make_label(batch, latent_dim, n_noise, device):
+    if n_noise == 1:
+        return torch.rand(batch, latent_dim, device=device)
+
+    noises = torch.rand(n_noise, batch, latent_dim, device=device)
+
+    return noises
+
+
+def mixing_noise(batch,param_dim, latent_dim, prob, device):
+    label = make_label(batch,param_dim,1,device)
     if prob > 0 and random.random() < prob:
-        return make_noise(batch, latent_dim, 2, device)
+        return label,make_noise(batch, latent_dim, 2, device)
 
     else:
-        return [make_noise(batch, latent_dim, 1, device)]
+        return label,[make_noise(batch, latent_dim, 1, device)]
 
 
 def set_grad_none(model, targets):
@@ -206,7 +220,7 @@ def set_grad_none(model, targets):
             p.grad = None
 
 
-def get_subspace(args, init_z, vis_flag=False):
+def get_subspace(args,real_label, init_z, vis_flag=False):
     std = args.subspace_std
     bs = args.batch if not vis_flag else args.n_sample
     ind = np.random.randint(0, init_z.size(0), size=bs)
@@ -214,7 +228,18 @@ def get_subspace(args, init_z, vis_flag=False):
     for i in range(z.size(0)):
         for j in range(z.size(1)):
             z[i][j].data.normal_(z[i][j], std)
-    return z
+    ind = np.random.randint(0, real_label.size(0), size=bs)
+    c = real_label[ind]
+    for i in range(c.size(0)):
+        for j in range(c.size(1)):
+            c[i][j].data.normal_(c[i][j],std)
+    return c,[z]
+
+def show_samples(n,device):
+    x=np.linspace(0.,1.,n+1,endpoint=False)[1:n+1]
+    y=np.linspace(0.,1.,n+1,endpoint=False)[1:n+1]
+    samples=np.array(np.meshgrid(x,y)).T.reshape(-1,2)
+    return torch.tensor(samples,device=device).float()
 
 
 def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_optim, g_ema, device, g_source, d_source):
@@ -263,11 +288,12 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
     lowp, highp = 0, args.highp
 
     # the following defines the constant noise used for generating images at different stages of training
-    sample_z = torch.randn(args.n_sample, args.latent, device=device)
+    sample_z = torch.randn(16, args.latent, device=device)
+    sample_c = show_samples(4,device)
 
     requires_grad(g_source, False)
     requires_grad(d_source, False)
-    sub_region_z = get_subspace(args, init_z.clone(), vis_flag=True)
+    #sub_region_z = get_subspace(args, init_z.clone(), vis_flag=True)
     for idx in pbar:
         i = idx + args.start_iter
         which = i % args.subspace_freq # defines whether we sample from anchor region in this iteration or other
@@ -276,8 +302,10 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
             print("Done!")
             break
 
-        real_img = next(loader)
+        # load the training image and label
+        real_img, real_label = next(loader)
         real_img = real_img.to(device)
+        real_label = real_label.to(device)
 
         requires_grad(generator, False)
         requires_grad(discriminator, True)
@@ -285,22 +313,22 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
 
         if which > 0:
             # sample normally, apply patch-level adversarial loss
-            noise = mixing_noise(args.batch, args.latent, args.mixing, device)
+            fake_label,noise = mixing_noise(args.batch,args.paramdim, args.latent, args.mixing, device)
         else:
             # sample from anchors, apply image-level adversarial loss
-            noise = [get_subspace(args, init_z.clone())]
+            fake_label,noise = get_subspace(args, real_label.clone(),init_z.clone())
 
-        fake_img, _ = generator(noise)
+        fake_img, _ = generator(fake_label,noise)
 
-        if args.augment:
+        if args.augment :
             real_img, _ = augment(real_img, ada_aug_p)
             fake_img, _ = augment(fake_img, ada_aug_p)
 
         fake_pred, _ = discriminator(
-            fake_img, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp))
+            fake_img,fake_label, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp))
         real_pred, _ = discriminator(
-            real_img, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp), real=True)
-
+            real_img,real_label, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp), real=True)
+        #print(fake_pred.shape)
         d_loss = d_logistic_loss(real_pred, fake_pred)
 
         loss_dict["d"] = d_loss
@@ -339,7 +367,7 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         if d_regularize:
             real_img.requires_grad = True
             real_pred, _ = discriminator(
-                real_img, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp))
+                real_img,real_label, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp))
             real_pred = real_pred.view(real_img.size(0), -1)
             real_pred = real_pred.mean(dim=1).unsqueeze(1)
 
@@ -354,30 +382,38 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
             e_optim.step()
         loss_dict["r1"] = r1_loss
 
+        #now update generator
         requires_grad(generator, True)
         requires_grad(discriminator, False)
         requires_grad(extra, False)
         if which > 0:
-            noise = mixing_noise(args.batch, args.latent, args.mixing, device)
+            # sample normally, apply patch-level adversarial loss
+            fake_label,noise = mixing_noise(args.batch,args.paramdim, args.latent, args.mixing, device)
         else:
-            noise = [get_subspace(args, init_z.clone())]
+            # sample from anchors, apply image-level adversarial loss
+            if random.random() > args.full_anchor_p:
+                fake_label,noise = get_subspace(args, real_label.clone(),init_z.clone())
+            else :
+                fake_label,_ = get_subspace(args, real_label.clone(),init_z.clone())
+                _,noise = mixing_noise(args.batch,args.paramdim, args.latent, args.mixing, device)
 
-        fake_img, _ = generator(noise)
+        fake_img, _ = generator(fake_label,noise)
 
         if args.augment:
             fake_img, _ = augment(fake_img, ada_aug_p)
 
         fake_pred, _ = discriminator(
-            fake_img, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp))
+            fake_img,fake_label, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp))
         g_loss = g_nonsaturating_loss(fake_pred)
 
         # distance consistency loss
         with torch.set_grad_enabled(False):
             z = torch.randn(args.feat_const_batch, args.latent, device=device)
+            cond = torch.rand(args.feat_const_batch, args.paramdim, device=device)
             feat_ind = numpy.random.randint(1, g_source.module.n_latent - 1, size=args.feat_const_batch)
 
             # computing source distances
-            source_sample, feat_source = g_source([z], return_feats=True)
+            source_sample, feat_source = g_source(cond,[z], return_feats=True)
             dist_source = torch.zeros(
                 [args.feat_const_batch, args.feat_const_batch - 1]).cuda()
 
@@ -397,7 +433,7 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
             dist_source = sfm(dist_source)
 
         # computing distances among target generations
-        _, feat_target = generator([z], return_feats=True)
+        _, feat_target = generator(cond,[z], return_feats=True)
         dist_target = torch.zeros(
             [args.feat_const_batch, args.feat_const_batch - 1]).cuda()
 
@@ -430,9 +466,9 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
 
         if g_regularize:
             path_batch_size = max(1, args.batch // args.path_batch_shrink)
-            noise = mixing_noise(
-                path_batch_size, args.latent, args.mixing, device)
-            fake_img, latents = generator(noise, return_latents=True)
+            fake_label,noise = mixing_noise(
+                path_batch_size,args.paramdim, args.latent, args.mixing, device)
+            fake_img, latents = generator(fake_label,noise, return_latents=True)
 
             path_loss, mean_path_length, path_lengths = g_path_regularize(
                 fake_img, latents, mean_path_length
@@ -493,18 +529,34 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
                 )
 
             if i % args.img_freq == 0:
-                with torch.set_grad_enabled(False):
+                with torch.no_grad():
                     g_ema.eval()
-                    sample, _ = g_ema([sample_z.data])
-                    sample_subz, _ = g_ema([sub_region_z.data])
+                    sample, _ = g_ema(sample_c,[sample_z])
                     save_image(
-                        sample,
-                        f"%s/{str(i).zfill(6)}.png" % (imsave_path),
-                        nrow=int(args.n_sample ** 0.5),
+                        sample[0:16],
+                        sample_c,
+                        os.path.join("samples/",args.exp,f"{str(i).zfill(6)}.png"),
+                        nrow=1,
                         normalize=False,
                         range=(-1, 1),
+                        use_wandb=False,
+                        iteration=i
                     )
-                    del sample
+                if i % (args.save_freq) == 0 and wandb:
+                    with torch.no_grad():
+                        #g_ema.eval()
+                        #sample, _ = g_ema(sample_c,[sample_z])
+                        save_image(
+                            sample[0:16],
+                            sample_c,
+                            os.path.join("samples/",args.exp,f"{str(i).zfill(6)}.png"),
+                            nrow=1,
+                            normalize=False,
+                            range=(-1, 1),
+                            use_wandb=args.wandb,
+                            iteration=i
+                        )
+                del sample
 
             if (i % args.save_freq == 0) and (i > 0):
                 torch.save(
@@ -528,25 +580,25 @@ if __name__ == "__main__":
 
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--iter", type=int, default=5002)
-    parser.add_argument("--save_freq", type=int, default=1000)
+    parser.add_argument("--save_freq", type=int, default=500)
     parser.add_argument("--img_freq", type=int, default=500)
     parser.add_argument("--kl_wt", type=int, default=1000)
     parser.add_argument("--highp", type=int, default=1)
-    parser.add_argument("--subspace_freq", type=int, default=4)
+    parser.add_argument("--subspace_freq", type=int, default=2)
     parser.add_argument("--feat_ind", type=int, default=3)
-    parser.add_argument("--batch", type=int, default=4)
-    parser.add_argument("--feat_const_batch", type=int, default=4)
+    parser.add_argument("--batch", type=int, default=8)
+    parser.add_argument("--feat_const_batch", type=int, default=16)
     parser.add_argument("--n_sample", type=int, default=25)
-    parser.add_argument("--size", type=int, default=256)
+    parser.add_argument("--size", type=str, default=256)
     parser.add_argument("--patch_size", type=int, default=4)
     parser.add_argument("--feat_res", type=int, default=128)
     parser.add_argument("--r1", type=float, default=10)
     parser.add_argument("--path_regularize", type=float, default=2)
     parser.add_argument("--path_batch_shrink", type=int, default=2)
-    parser.add_argument("--d_reg_every", type=int, default=16)
-    parser.add_argument("--g_reg_every", type=int, default=4)
+    parser.add_argument("--d_reg_every", type=int, default=8)
+    parser.add_argument("--g_reg_every", type=int, default=2)
     parser.add_argument("--mixing", type=float, default=0.9)
-    parser.add_argument("--subspace_std", type=float, default=0.1)
+    parser.add_argument("--subspace_std", type=float, default=0.05)
     parser.add_argument("--ckpt", type=str, default=None)
     parser.add_argument("--source_key", type=str, default='ffhq')
     parser.add_argument("--exp", type=str, default=None, required=True)
@@ -560,37 +612,42 @@ if __name__ == "__main__":
     parser.add_argument("--ada_target", type=float, default=0.6)
     parser.add_argument("--ada_length", type=int, default=500 * 1000)
     parser.add_argument("--n_train", type=int, default=10)
+    parser.add_argument("--full_anchor_p", type=float, default=0.5)
 
     args = parser.parse_args()
 
     torch.manual_seed(42)
     random.seed(42)
-
-    n_gpu = 4
+    #n_gpu = os.environ["CUDA_VISIBLE_DEVICES"] if "CUDA_VISIBLE_DEVICES" in os.environ else 1
+    n_gpu = len([s.strip() for s in os.environ["CUDA_VISIBLE_DEVICES"].split(",")] ) if "CUDA_VISIBLE_DEVICES" in os.environ else 1
+    #print(n_gpu)
+    sizes = [int(s.strip()) for s in args.size.split(",")]
+    args.size=sizes
     args.distributed = n_gpu > 1
 
+    args.paramdim = 2
     args.latent = 512
     args.n_mlp = 8
 
     args.start_iter = 0
 
     generator = Generator(
-        args.size, args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
+        args.size[0], args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
     ).to(device)
     g_source = Generator(
-        args.size, args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
+        args.size[0], args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
     ).to(device)
     discriminator = Discriminator(
-        args.size, channel_multiplier=args.channel_multiplier
+        args.size[0], channel_multiplier=args.channel_multiplier
     ).to(device)
     d_source = Discriminator(
-        args.size, channel_multiplier=args.channel_multiplier
+        args.size[0], channel_multiplier=args.channel_multiplier
     ).to(device)
     g_ema = Generator(
-        args.size, args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
+        args.size[0], args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
     ).to(device)
     extra = Extra().to(device)
-
+    #print(generator)
     g_ema.eval()
     accumulate(g_ema, generator, 0)
 
@@ -657,13 +714,16 @@ if __name__ == "__main__":
 
     transform = transforms.Compose(
         [
-            RandomFlip(),
-            RandomRotate(),
+            #RandomFlip(),
+            #RandomRotate(),
             transforms.ToTensor(),
             #transforms.Normalize(
             #    (0.5, 0.5, 0.5), (0.5, 0.5, 0.5), inplace=True),
         ]
     )
+    if len(sizes)>2:
+        print('Image size should be 1 or 2 numbers')
+        exit
 
     dataset = MultiResolutionDataset(args.data_path, transform, args.size)
     loader = data.DataLoader(
@@ -671,10 +731,11 @@ if __name__ == "__main__":
         batch_size=args.batch,
         sampler=data_sampler(dataset, shuffle=True, distributed=False),
         drop_last=True,
+        num_workers=4,
     )
 
     if get_rank() == 0 and wandb is not None and args.wandb:
-        wandb.init(project="stylegan 2")
+        wandb.init(project="few shot stylegan 2", entity="dkn16")
 
 
     train(args, loader, generator, discriminator, extra, g_optim,

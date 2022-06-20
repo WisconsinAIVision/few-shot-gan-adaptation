@@ -74,6 +74,60 @@ def prepare21cm(
     with env.begin(write=True) as txn:
         txn.put("length".encode("utf-8"), str(total).encode("utf-8"))
 
+# this function is specially designed for Xiaosheng's dataset
+def prepareconditional21cm(
+    env, size=[64,512]
+):
+    # get the filenames in the datapath. Here we can directly write the code
+    filenames=[]
+    paramfilename=[]
+    total=0
+    for i in range(80):
+        filenames.append('/scratch/dkn16/dataset_lc512/data/Idlt-'+str(i)+'.npy')
+        paramfilename.append('/scratch/dkn16/dataset_lc512/params/Idlt-'+str(i)+'-y.npy')
+
+    #check the dimension of data
+    datacache=np.load(filenames[0])
+    if datacache.ndim!=3:
+        print('Please check the dimension of 21cm cube, should be 3D')
+        exit
+    
+    slices=2
+    width=np.shape(datacache)[1]
+    length=np.shape(datacache)[2]
+    widthstartpoint=int(0)
+    lengthstartpoint=int(np.abs(size[1]-length)/2.)
+
+    #load the 21cm datacubes
+    
+    for i in range(80):
+        datacube=np.load(filenames[i]).astype(np.float32)
+        datacache=datacube[::128,widthstartpoint:widthstartpoint+size[0],0:0+size[1]]/30.
+        paramcache=(np.load(paramfilename[i]).astype(np.float32)-np.array([4.,1.]))/np.array([2.,1.398]).astype(np.float64)
+        #print(paramcache)
+        #in many cases we dont need to do the normalization here, the 21cm signal is always less than 255, thus PIL can handle this
+        #datacache=datacache/(3*np.std(datacache))
+        for i in range(slices):
+            key = f"{size[0]}-{str(total).zfill(6)}".encode("utf-8")
+            key_label = f"{size[0]}-{str(total).zfill(6)}_label".encode("utf-8")
+            with env.begin(write=True) as txn:
+                txn.put(key, datacache[i].copy())
+            with env.begin(write=True) as txn:
+                txn.put(key_label,paramcache.copy())
+            total += 1
+        datacache=datacube.transpose(1,0,2)[64::128,widthstartpoint:widthstartpoint+size[0],0:0+size[1]]/30.
+        for i in range(slices):
+            key = f"{size[0]}-{str(total).zfill(6)}".encode("utf-8")
+            key_label = f"{size[0]}-{str(total).zfill(6)}_label".encode("utf-8")
+            with env.begin(write=True) as txn:
+                txn.put(key, datacache[i].copy())
+            with env.begin(write=True) as txn:
+                txn.put(key_label,paramcache.copy())
+            total += 1
+    
+    with env.begin(write=True) as txn:
+        txn.put("length".encode("utf-8"), str(total).encode("utf-8"))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Preprocess images for model training")
@@ -81,12 +135,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--size",
         type=str,
-        default="64",
+        default="64,64",
         help="resolutions of images for the dataset",
     )
     #deleted the multiprocessing argument, because i'm too stupid to use multiprocessing
     #deleted the resampling argument, not needed anymore
     parser.add_argument("path", type=str, help="path to the image dataset")
+    #a parameter for making conditional dataset
+    parser.add_argument("--cond", type=bool, help="path to the image dataset",default=False)
 
     args = parser.parse_args()
 
@@ -100,4 +156,7 @@ if __name__ == "__main__":
     imgset = args.path
 
     with lmdb.open(args.out, map_size=1024 ** 4, readahead=False) as env:
-        prepare21cm(env, imgset, size=sizes)
+        if args.cond:
+            prepareconditional21cm(env,  size=sizes)
+        else:
+            prepare21cm(env, imgset,size=sizes)

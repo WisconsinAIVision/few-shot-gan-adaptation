@@ -14,3 +14,5 @@ checkpoints/*
 traversals/*
 __pycache__/train.cpython-38.pyc
 gifs/sample.gif
+wandb/
+tests/
