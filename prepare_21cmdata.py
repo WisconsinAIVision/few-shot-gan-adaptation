@@ -96,7 +96,7 @@ def prepareconditional21cm(
     width=np.shape(datacache)[1]
     length=np.shape(datacache)[2]
     widthstartpoint=int(0)
-    lengthstartpoint=int(np.abs(size[1]-length)/2.)
+    lengthstartpoint=int(0)
 
     #load the 21cm datacubes
     

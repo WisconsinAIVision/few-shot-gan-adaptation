@@ -298,11 +298,22 @@ class ConstantInput(nn.Module):
         super().__init__()
 
         self.input = nn.Parameter(torch.randn(1, channel, size, 8*size))
+        self.input2 = nn.Parameter(torch.randn(1, channel, size, 8*size))
+        self.input3 = nn.Parameter(torch.randn(1, channel, size, 8*size))
+        self.input4 = nn.Parameter(torch.randn(1, channel, size, 8*size))
 
-    def forward(self, input):
+    def forward(self, input,extend = True):
+
         batch = input.shape[0]
-        out = self.input.repeat(batch, 1, 1, 1)
+        out1 = self.input.repeat(batch, 1, 1, 1)
+        if extend:
+            out2 = self.input2.repeat(batch, 1, 1, 1)
+            out3 = self.input3.repeat(batch, 1, 1, 1)
+            out4 = self.input4.repeat(batch, 1, 1, 1)
 
+            out=torch.cat((out1,out2,out3,out4),dim = 2)
+        else:
+            out =out1
         return out
 
 
@@ -375,7 +386,8 @@ class Generator(nn.Module):
         channel_multiplier=2,
         blur_kernel=[1, 3, 3, 1],
         lr_mlp=0.01,
-        param_dim = 2
+        param_dim = 2,
+        extend = False
     ):
         super().__init__()
 
@@ -464,6 +476,8 @@ class Generator(nn.Module):
             in_channel = out_channel
 
         self.n_latent = self.log_size * 2 
+        self.final_conv = nn.ModuleList()
+        self.extend = extend
 
     def make_noise(self):
         device = self.input.input.device
@@ -546,7 +560,7 @@ class Generator(nn.Module):
             #latent[:, inject_index-1, :] = styles[1]
 
         feat_list = []
-        out = self.input(latent)
+        out = self.input(latent,extend = self.extend)
         out = self.conv1(out, latent[:, 0], noise=noise[0])
         feat_list.append(out)
         skip = self.to_rgb1(out, latent[:, 1])
@@ -768,6 +782,9 @@ class Patch_Discriminator(nn.Module):
             EqualLinear(channels[4], 16, activation="fused_lrelu"),
             EqualLinear(16, 1),
         )
+        self.pre_final_linear_1 = nn.Sequential(
+            EqualLinear(channels[4] * 4 * 4 * 8 * 4, channels[4], activation="fused_lrelu"),
+        )
 
 
     def forward(self, inp,label, ind = None, extra = None, flag = None, p_ind = None, real=False):
@@ -778,10 +795,10 @@ class Patch_Discriminator(nn.Module):
                 inp = self.convs[i](inp)
             else:
                 temp1 = self.convs[i].conv1(inp)
-                if (flag > 0) and (temp1.shape[1] == 512) and (temp1.shape[2] == 32 or temp1.shape[2] == 16):
+                if (flag > 0) and (temp1.shape[1] == 512) and (temp1.shape[2] == 8 or temp1.shape[2] == 4):
                     feat.append(temp1)
                 temp2 = self.convs[i].conv2(temp1)
-                if (flag > 0) and (temp2.shape[1] == 512) and (temp2.shape[2] == 32 or temp2.shape[2] == 16):
+                if (flag > 0) and (temp2.shape[1] == 512) and (temp2.shape[2] == 8 or temp2.shape[2] == 4):
                     feat.append(temp2)
                 inp = self.convs[i](inp)
                 if (flag > 0) and len(feat) == 4:
@@ -803,7 +820,7 @@ class Patch_Discriminator(nn.Module):
         out = self.final_conv(out)
         feat.append(out)
         out = out.view(batch, -1)
-        out = self.pre_final_linear(out)
+        out = self.pre_final_linear_1(out)/4.
 
         # we add the conditional settings here. make labels weight much.
         label=self.c_pre_final_linear(label)
@@ -834,3 +851,93 @@ class Extra(nn.Module):
         out = self.new_conv[ind](inp)
         return out
 
+class Patch_Patch_Discriminator(nn.Module):
+    def __init__(self, size, channel_multiplier=2, blur_kernel=[1, 3, 3, 1],c_dim =2 ):
+        super().__init__()
+
+        channels = {
+            2: 512,
+            4: 512,
+            8: 512,
+            16: 512,
+            32: 512,
+            64: 128* channel_multiplier,
+            128: 128 * channel_multiplier,
+            256: 64 * channel_multiplier,
+            512: 32 * channel_multiplier,
+            1024: 16 * channel_multiplier,
+        }
+
+        convs = [ConvLayer(1, channels[size], 1)]
+
+        log_size = int(math.log(size, 2))
+
+        in_channel = channels[size]
+
+        for i in range(log_size, 2, -1):
+            out_channel = channels[2 ** (i - 1)]
+
+            convs.append(ResBlock(in_channel, out_channel, blur_kernel))
+
+            in_channel = out_channel
+
+        self.convs = nn.Sequential(*convs)
+        self.stddev_group = 4
+        self.stddev_feat = 1
+
+        self.final_conv = ConvLayer(in_channel + 1, channels[4], 3)
+        self.pre_final_linear = nn.Sequential(
+            EqualLinear(channels[4] * 4 * 4 * 8, channels[4], activation="fused_lrelu"),
+        )
+        self.c_pre_final_linear = nn.Sequential(
+            EqualLinear(c_dim, channels[4], activation="fused_lrelu"),
+        )
+        self.final_linear=nn.Sequential(
+            EqualLinear(channels[4], 16, activation="fused_lrelu"),
+            EqualLinear(16, 1),
+        )
+        self.pre_final_linear_1 = nn.Sequential(
+            EqualLinear(channels[4] * 4 * 4 * 8, channels[4], activation="fused_lrelu"),
+        )
+
+
+    def forward(self, inp,label, ind = None, extra = None, flag = None, p_ind = None, real=False):
+
+        feat = []
+        for i in range(len(self.convs)):
+            if i == 0:
+                inp = self.convs[i](inp)
+            else:
+                temp1 = self.convs[i].conv1(inp)
+                if (flag > 0) and (temp1.shape[1] == 512) and (temp1.shape[2] == 16 or temp1.shape[2] == 8):
+                    feat.append(temp1)
+                temp2 = self.convs[i].conv2(temp1)
+                if (flag > 0) and (temp2.shape[1] == 512) and (temp2.shape[2] == 16 or temp2.shape[2] == 8):
+                    feat.append(temp2)
+                inp = self.convs[i](inp)
+                if (flag > 0) and len(feat) == 4:
+                    # We use 4 possible intermediate feature maps to be used for patch-based adversarial loss. Any one of them is selected randomly during training.
+                    inp = extra(feat[p_ind], p_ind,label)
+                    return inp, None
+
+        out = inp
+        batch, channel, height, width = out.shape
+        group = min(batch, self.stddev_group)
+        stddev = out.view(
+            group, -1, self.stddev_feat, channel // self.stddev_feat, height, width
+        )
+        stddev = torch.sqrt(stddev.var(0, unbiased=False) + 1e-8)
+        stddev = stddev.mean([2, 3, 4], keepdims=True).squeeze(2)
+        stddev = stddev.repeat(group, 1, height, width)
+        out = torch.cat([out, stddev], 1)
+
+        out = self.final_conv(out)
+        feat.append(out)
+        out = out.view(batch, -1)
+        out = self.pre_final_linear(out)
+
+        # we add the conditional settings here. make labels weight much.
+        label=self.c_pre_final_linear(label)
+        out=out*label
+        out=self.final_linear(out)
+        return out, None 

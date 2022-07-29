@@ -75,6 +75,7 @@ except ImportError:
 
 from model import Generator, Extra
 from model import Patch_Discriminator as Discriminator  # , Projection_head
+from model import Patch_Patch_Discriminator 
 from dataset import MultiResolutionDataset
 from distributed import (
     get_rank,
@@ -86,6 +87,8 @@ from distributed import (
 from non_leaking import augment
 #use matplotlib as substitution
 from matplotlib import pyplot as plt
+
+#need to be rewritten
 def save_image(tensor, latent, fp, nrow=8, padding=2,
                normalize=False, range=None, scale_each=False, pad_value=0, format=None,use_wandb = False, iteration = 0):
     """Save a given Tensor into an image file.
@@ -108,8 +111,8 @@ def save_image(tensor, latent, fp, nrow=8, padding=2,
     plt.imshow(ndarr[0],vmin=0,vmax=3*np.std(ndarr[0]))
     y_ticks=[]
     y_str=[]
-    for i in [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]:
-        y_ticks.append(32+i*66)
+    for i in [0,1,2,3]:
+        y_ticks.append(128+i*258)
         y_str.append('{:.3f}'.format(latent[i][0]*2+4)+','+'{:.1f}'.format(10**(latent[i][1]*1.398+1)))
     plt.yticks(y_ticks,y_str)
     plt.colorbar()
@@ -117,6 +120,24 @@ def save_image(tensor, latent, fp, nrow=8, padding=2,
     if use_wandb:
         wandb.log({'plt':wandb.Image(fp)},step=iteration)
     plt.close()
+
+def init_generator(generator):
+    state_dic = generator.state_dict()
+    input_tensor = state_dic['input.input']
+    state_dic.update({'input.input2':input_tensor.clone()})
+    state_dic.update({'input.input3':input_tensor.clone()})
+    state_dic.update({'input.input4':input_tensor.clone()})
+    generator.load_state_dict(state_dic)
+
+def init_discriminator(discriminator):
+    state_dic = discriminator.state_dict()
+    input_tensor = state_dic['pre_final_linear.0.weight']
+    new_tensor = torch.cat((input_tensor,input_tensor,input_tensor,input_tensor),axis = 1)
+    #new_dic={}
+    state_dic.update({'pre_final_linear_1.0.weight':new_tensor})
+    input_tensor = state_dic['pre_final_linear.0.bias']
+    state_dic.update({'pre_final_linear_1.0.bias':input_tensor.clone()})
+    discriminator.load_state_dict(state_dic)
 
 def data_sampler(dataset, shuffle, distributed):
     if distributed:
@@ -242,7 +263,7 @@ def show_samples(n,device):
     return torch.tensor(samples,device=device).float()
 
 
-def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_optim, g_ema, device, g_source, d_source):
+def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_optim, g_ema, device, g_source, d_source,extra_patch,d_optim_patch,e_optim_patch):
     loader = sample_data(loader)
 
     imsave_path = os.path.join('samples', args.exp)
@@ -288,8 +309,8 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
     lowp, highp = 0, args.highp
 
     # the following defines the constant noise used for generating images at different stages of training
-    sample_z = torch.randn(16, args.latent, device=device)
-    sample_c = show_samples(4,device)
+    sample_z = torch.randn(4, args.latent, device=device)
+    sample_c = show_samples(2,device)
 
     requires_grad(g_source, False)
     requires_grad(d_source, False)
@@ -307,9 +328,12 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         real_img = real_img.to(device)
         real_label = real_label.to(device)
 
+        # from here on, we optimise full discriminator
         requires_grad(generator, False)
+        requires_grad(d_source, False)
         requires_grad(discriminator, True)
         requires_grad(extra, True)
+        requires_grad(extra_patch, False)
 
         if which > 0:
             # sample normally, apply patch-level adversarial loss
@@ -382,10 +406,97 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
             e_optim.step()
         loss_dict["r1"] = r1_loss
 
+
+        #from here on, we update the source size discriminator
+        requires_grad(generator, False)
+        requires_grad(d_source, True)
+        requires_grad(discriminator, False)
+        requires_grad(extra, False)
+        requires_grad(extra_patch, True)
+        if args.patch:
+            if which > 0:
+                # sample normally, apply patch-level adversarial loss
+                fake_label,noise = mixing_noise(args.batch,args.paramdim, args.latent, args.mixing, device)
+            else:
+                # sample from anchors, apply image-level adversarial loss
+                fake_label,noise = get_subspace(args, real_label.clone(),init_z.clone())
+
+            fake_img, _ = generator(fake_label,noise)
+
+            if args.augment :
+                real_img, _ = augment(real_img, ada_aug_p)
+                fake_img, _ = augment(fake_img, ada_aug_p)
+
+            patch_ind = random.randint(0,3*args.size[0]-1)
+
+            fake_img = fake_img[:,:,patch_ind:patch_ind+args.size[0],:]
+            real_img_patch = real_img[:,:,patch_ind:patch_ind+args.size[0],:]
+
+            fake_pred, _ = d_source(
+                fake_img,fake_label, extra=extra_patch, flag=which, p_ind=np.random.randint(lowp, highp))
+            real_pred, _ = d_source(
+                real_img_patch,real_label, extra=extra_patch, flag=which, p_ind=np.random.randint(lowp, highp), real=True)
+            #print(fake_pred.shape)
+            d_loss = d_logistic_loss(real_pred, fake_pred)
+
+            loss_dict["d_patch"] = d_loss
+            loss_dict["real_score_patch"] = real_pred.mean()
+            loss_dict["fake_score_patch"] = fake_pred.mean()
+
+            d_source.zero_grad()
+            extra_patch.zero_grad()
+            d_loss.backward()
+            d_optim_patch.step()
+            e_optim_patch.step()
+
+            if args.augment and args.augment_p == 0:
+                ada_augment += torch.tensor(
+                    (torch.sign(real_pred).sum().item(), real_pred.shape[0]), device=device
+                )
+                ada_augment = reduce_sum(ada_augment)
+
+                if ada_augment[1] > 255:
+                    pred_signs, n_pred = ada_augment.tolist()
+
+                    r_t_stat = pred_signs / n_pred
+
+                    if r_t_stat > args.ada_target:
+                        sign = 1
+
+                    else:
+                        sign = -1
+
+                    ada_aug_p += sign * ada_aug_step * n_pred
+                    ada_aug_p = min(1, max(0, ada_aug_p))
+                    ada_augment.mul_(0)
+
+            d_regularize = i % args.d_reg_every == 0
+
+            if d_regularize:
+                real_img_patch = real_img_patch.detach()
+                real_img_patch.requires_grad = True
+                real_pred, _ = d_source(
+                    real_img_patch,real_label, extra=extra_patch, flag=which, p_ind=np.random.randint(lowp, highp))
+                real_pred = real_pred.view(real_img.size(0), -1)
+                real_pred = real_pred.mean(dim=1).unsqueeze(1)
+
+                r1_loss = d_r1_loss(real_pred, real_img_patch)
+
+                d_source.zero_grad()
+                extra_patch.zero_grad()
+                (args.r1 / 2 * r1_loss * args.d_reg_every +
+                0 * real_pred[0]).backward()
+
+                d_optim_patch.step()
+                e_optim_patch.step()
+            loss_dict["r1_patch"] = r1_loss
+
         #now update generator
         requires_grad(generator, True)
         requires_grad(discriminator, False)
         requires_grad(extra, False)
+        requires_grad(d_source, False)
+        requires_grad(extra_patch, False)
         if which > 0:
             # sample normally, apply patch-level adversarial loss
             fake_label,noise = mixing_noise(args.batch,args.paramdim, args.latent, args.mixing, device)
@@ -405,7 +516,11 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         fake_pred, _ = discriminator(
             fake_img,fake_label, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp))
         g_loss = g_nonsaturating_loss(fake_pred)
-
+        if args.patch:
+            fake_img_patch = fake_img[:,:,patch_ind:patch_ind+args.size[0],:]
+            fake_pred_patch,_ = d_source(
+                fake_img_patch,fake_label, extra=extra_patch, flag=which, p_ind=np.random.randint(lowp, highp))
+            g_loss_patch = g_nonsaturating_loss(fake_pred_patch)
         # distance consistency loss
         with torch.set_grad_enabled(False):
             z = torch.randn(args.feat_const_batch, args.latent, device=device)
@@ -451,7 +566,9 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         dist_target = sfm(dist_target)
         rel_loss = args.kl_wt * \
             kl_loss(torch.log(dist_target), dist_source) # distance consistency loss 
-        g_loss = g_loss + rel_loss
+        g_loss = g_loss + rel_loss 
+        if args.patch:
+            g_loss = g_loss + g_loss_patch
 
         loss_dict["g"] = g_loss
 
@@ -501,6 +618,11 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         path_loss_val = loss_reduced["path"].mean().item()
         real_score_val = loss_reduced["real_score"].mean().item()
         fake_score_val = loss_reduced["fake_score"].mean().item()
+        if args.patch:
+            r1_val_patch = loss_reduced["r1_patch"].mean().item()
+            d_patch_loss_val = loss_reduced["d_patch"].mean().item()
+            real_score_val_patch = loss_reduced["real_score_patch"].mean().item()
+            fake_score_val_patch = loss_reduced["fake_score_patch"].mean().item()
         path_length_val = loss_reduced["path_length"].mean().item()
 
         if get_rank() == 0:
@@ -527,13 +649,21 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
                         "Path Length": path_length_val,
                     }
                 )
+                if args.patch:
+                    wandb.log(
+                    {
+                        "R1_patch": r1_val_patch,
+                        "Patch Real Score": real_score_val_patch,
+                        "Patch Fake Score": fake_score_val_patch,
+                    }
+                )
 
             if i % args.img_freq == 0:
                 with torch.no_grad():
                     g_ema.eval()
                     sample, _ = g_ema(sample_c,[sample_z])
                     save_image(
-                        sample[0:16],
+                        sample[0:4],
                         sample_c,
                         os.path.join("samples/",args.exp,f"{str(i).zfill(6)}.png"),
                         nrow=1,
@@ -547,7 +677,7 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
                         #g_ema.eval()
                         #sample, _ = g_ema(sample_c,[sample_z])
                         save_image(
-                            sample[0:16],
+                            sample[0:4],
                             sample_c,
                             os.path.join("samples/",args.exp,f"{str(i).zfill(6)}.png"),
                             nrow=1,
@@ -580,14 +710,14 @@ if __name__ == "__main__":
 
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--iter", type=int, default=5002)
-    parser.add_argument("--save_freq", type=int, default=500)
-    parser.add_argument("--img_freq", type=int, default=500)
+    parser.add_argument("--save_freq", type=int, default=300)
+    parser.add_argument("--img_freq", type=int, default=300)
     parser.add_argument("--kl_wt", type=int, default=1000)
     parser.add_argument("--highp", type=int, default=1)
     parser.add_argument("--subspace_freq", type=int, default=2)
     parser.add_argument("--feat_ind", type=int, default=3)
-    parser.add_argument("--batch", type=int, default=8)
-    parser.add_argument("--feat_const_batch", type=int, default=16)
+    parser.add_argument("--batch", type=int, default=4)
+    parser.add_argument("--feat_const_batch", type=int, default=8)
     parser.add_argument("--n_sample", type=int, default=25)
     parser.add_argument("--size", type=str, default=256)
     parser.add_argument("--patch_size", type=int, default=4)
@@ -605,6 +735,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.002)
     parser.add_argument("--channel_multiplier", type=int, default=2)
     parser.add_argument("--wandb", action="store_true")
+    parser.add_argument("--patch", action="store_true")
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument("--augment", dest='augment', action='store_true')
     parser.add_argument("--no-augment", dest='augment', action='store_false')
@@ -632,7 +763,7 @@ if __name__ == "__main__":
     args.start_iter = 0
 
     generator = Generator(
-        args.size[0], args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
+        args.size[0], args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier,extend=True
     ).to(device)
     g_source = Generator(
         args.size[0], args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
@@ -640,13 +771,14 @@ if __name__ == "__main__":
     discriminator = Discriminator(
         args.size[0], channel_multiplier=args.channel_multiplier
     ).to(device)
-    d_source = Discriminator(
+    d_source = Patch_Patch_Discriminator(
         args.size[0], channel_multiplier=args.channel_multiplier
     ).to(device)
     g_ema = Generator(
-        args.size[0], args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
+        args.size[0], args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier,extend=True
     ).to(device)
     extra = Extra().to(device)
+    extra_patch = Extra().to(device)
     #print(generator)
     g_ema.eval()
     accumulate(g_ema, generator, 0)
@@ -664,9 +796,19 @@ if __name__ == "__main__":
         lr=args.lr * d_reg_ratio,
         betas=(0 ** d_reg_ratio, 0.99 ** d_reg_ratio),
     )
+    d_optim_patch = optim.Adam(
+        d_source.parameters(),
+        lr=args.lr * d_reg_ratio,
+        betas=(0 ** d_reg_ratio, 0.99 ** d_reg_ratio),
+    )
 
     e_optim = optim.Adam(
         extra.parameters(),
+        lr=args.lr * d_reg_ratio,
+        betas=(0 ** d_reg_ratio, 0.99 ** d_reg_ratio),
+    )
+    e_optim_patch = optim.Adam(
+        extra_patch.parameters(),
         lr=args.lr * d_reg_ratio,
         betas=(0 ** d_reg_ratio, 0.99 ** d_reg_ratio),
     )
@@ -695,13 +837,18 @@ if __name__ == "__main__":
 
         #d_source = nn.parallel.DataParallel(d_source)
         #discriminator = nn.parallel.DataParallel(discriminator)
-        discriminator.load_state_dict(ckpt["d"])
-        d_source.load_state_dict(ckpt_source["d"])
+        discriminator.load_state_dict(ckpt["d"], strict=False)
+        d_source.load_state_dict(ckpt_source["d"], strict=False)
 
-        if 'g_optim' in ckpt.keys():
-            g_optim.load_state_dict(ckpt["g_optim"])
-        if 'd_optim' in ckpt.keys():
-            d_optim.load_state_dict(ckpt["d_optim"])
+        #if 'g_optim' in ckpt.keys():
+        #    g_optim.load_state_dict(ckpt["g_optim"], strict=False)
+        #if 'd_optim' in ckpt.keys():
+        #    d_optim.load_state_dict(ckpt["d_optim"], strict=False)
+        #    d_optim_patch.load_state_dict(ckpt["d_optim"], strict=False)
+
+    init_generator(generator)
+    init_generator(g_ema)
+    init_discriminator(discriminator)
 
     if args.distributed:
         geneator = nn.parallel.DataParallel(generator)
@@ -711,6 +858,7 @@ if __name__ == "__main__":
         discriminator = nn.parallel.DataParallel(discriminator)
         d_source = nn.parallel.DataParallel(d_source)
         extra = nn.parallel.DataParallel(extra)
+        extra_patch = nn.parallel.DataParallel(extra_patch)
 
     transform = transforms.Compose(
         [
@@ -725,7 +873,7 @@ if __name__ == "__main__":
         print('Image size should be 1 or 2 numbers')
         exit
 
-    dataset = MultiResolutionDataset(args.data_path, transform, args.size)
+    dataset = MultiResolutionDataset(args.data_path, transform, [args.size[0]*4,args.size[1]])
     loader = data.DataLoader(
         dataset,
         batch_size=args.batch,
@@ -735,8 +883,8 @@ if __name__ == "__main__":
     )
 
     if get_rank() == 0 and wandb is not None and args.wandb:
-        wandb.init(project="few shot stylegan 2", entity="dkn16")
+        wandb.init(project="few shot lc expand", entity="dkn16")
 
 
     train(args, loader, generator, discriminator, extra, g_optim,
-          d_optim, e_optim, g_ema, device, g_source, d_source)
+          d_optim, e_optim, g_ema, device, g_source, d_source,extra_patch,d_optim_patch,e_optim_patch)

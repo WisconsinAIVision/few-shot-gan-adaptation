@@ -2,12 +2,12 @@
 #PBS -j oe
 #PBS -l select=1:ncpus=4:mem=50gb:ngpus=2
 
-cd /work/dkn16/few-shot-gan-adaptation/
+cd /work/dkn16/few-shot-gan-lightcone/
 source activate PyTorch-1.4.0
 #export PYTHONPATH=/home/dkn16/.local/lib/python3.7/site-packages/:$PYTHONPATH
 #python prepare_21cmdata.py --out /scratch/dkn16/lmdb_ada  --size 64 /scratch/dkn16/dataset/z8
-#python prepare_21cmdata.py --out /scratch/dkn16/lmdb_ada/lc512  --size 64,512 --cond True somepath
-CUDA_VISIBLE_DEVICES=5,6 python train.py --ckpt ../stylegan2-pytorch/checkpoint/090000.pt --d_reg_every 4 --g_reg_every 1  --data_path /scratch/dkn16/lmdb_ada/lc512 --exp lc_100_to_128_batch --size 64,512 --source_key 090000 --iter 95000 --wandb --no-augment
+#python prepare_21cmdata.py --out /scratch/dkn16/lmdb_ada/lc256_512  --size 256,512 --cond True somepath
+CUDA_VISIBLE_DEVICES=4,5 python train.py --ckpt ../stylegan2-pytorch/checkpoint/090000.pt --d_reg_every 4 --g_reg_every 1  --data_path /scratch/dkn16/lmdb_ada/lc256_512 --exp lc_100_to_256_feat4 --wandb --patch --size 64,512 --source_key 090000 --iter 95000 --no-augment
 #CUDA_VISIBLE_DEVICES=5 python generate.py --ckpt_source ../stylegan2-pytorch/checkpoint/110000.pt --ckpt_target ./checkpoints/z7_to_z8_v2/115000.pt --size 64 --save_format npy --out /scratch/dkn16/GAN_test --n_sample 10000
 #CUDA_VISIBLE_DEVICES=5 python generate.py --ckpt_source ../stylegan2-pytorch/checkpoint/110000.pt --ckpt_target ./checkpoints/z7_to_z8_v2/112000.pt --size 64
 #CUDA_VISIBLE_DEVICES=5 python generate.py --ckpt_source ../stylegan2-pytorch/checkpoint/110000.pt --ckpt_target ./checkpoints/z7_to_z8_v2/115000.pt --size 64 --mode interpolate
