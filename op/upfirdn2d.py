@@ -13,6 +13,7 @@ upfirdn2d_op = load(
         os.path.join(module_path, "upfirdn2d.cpp"),
         os.path.join(module_path, "upfirdn2d_kernel.cu"),
     ],
+    extra_cuda_cflags = ['-isystem /usr/local/cuda/include'],
 )
 
 

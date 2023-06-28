@@ -3,8 +3,9 @@ from io import BytesIO
 import multiprocessing
 from functools import partial
 import os
+import re
 import numpy as np
-
+import random
 from PIL import Image
 from torch import dtype
 import lmdb
@@ -74,57 +75,98 @@ def prepare21cm(
     with env.begin(write=True) as txn:
         txn.put("length".encode("utf-8"), str(total).encode("utf-8"))
 
-# this function is specially designed for Xiaosheng's dataset
+# this function is specially designed for my dataset 
 def prepareconditional21cm(
-    env, size=[64,512]
+    env, size=[64,512],direc = '/scratch/dkn16/dataset_lc512/data-tbandrho'
 ):
+    
     # get the filenames in the datapath. Here we can directly write the code
     filenames=[]
-    paramfilename=[]
+    # first we walk all the filenames
+    for root, dirs, files in os.walk(direc):
+        for i in range(len(files)):
+            filenames.append(os.path.join(root,files[i]))
+            #print(filenames[i])
+
+    total_1=int(len(filenames)*0.8)
+    random.seed(2)
+    random.shuffle(filenames)
+
+
+    print(total_1)
+    print(filenames[0])
     total=0
-    for i in range(80):
-        filenames.append('/scratch/dkn16/dataset_lc512/data/Idlt-'+str(i)+'.npy')
-        paramfilename.append('/scratch/dkn16/dataset_lc512/params/Idlt-'+str(i)+'-y.npy')
+    pattern = re.compile(r'\d+.\d+')
+
 
     #check the dimension of data
     datacache=np.load(filenames[0])
-    if datacache.ndim!=3:
-        print('Please check the dimension of 21cm cube, should be 3D')
-        exit
-    
+    if datacache.ndim!=4:
+        print('Please check the dimension of 21cm cube, should be 3D plus one channel dimension, in total 4')
+        return 0
+    #tb_cache=datacache[0,::32,:0+size[0],0:0+size[1]]/30.
+    #print(tb_cache.shape)
     slices=2
-    width=np.shape(datacache)[1]
-    length=np.shape(datacache)[2]
-    widthstartpoint=int(0)
-    lengthstartpoint=int(0)
+    width=np.shape(datacache)[2]
+    length=np.shape(datacache)[3]
+    #check if we use the right 'size' parameter
+    if width<size[0] or length!=size[1]:
+        print('Dataset resolution does not match the size parameter. Please check the resolution of your dataset.')
+        return 0
 
     #load the 21cm datacubes
     
-    for i in range(80):
+    for i in range(args.num):
         datacube=np.load(filenames[i]).astype(np.float32)
-        datacache=datacube[::128,widthstartpoint:widthstartpoint+size[0],0:0+size[1]]/30.
-        paramcache=(np.load(paramfilename[i]).astype(np.float32)-np.array([4.,1.]))/np.array([2.,1.398]).astype(np.float64)
+        #datacube = datacube[0:2,...].copy()
+        datacube=datacube.transpose(1,0,2,3)
+        
+        tb_cache=datacube[::128,0:2,0:0+size[0],0:0+size[1]]
+        tb_cache[:,0,...]= tb_cache[:,0,...]/30.
+        #tb_cache[:,1,...]= (tb_cache[:,1,...])/13.
+        #tb_cache[:,1,...]= (tb_cache[:,1,...])/np.mean(datacube[:,2,...],axis=(0,1))
+        tb_cache[:,1,...]=(tb_cache[:,1,...]+1.)/2.-1
+        #rho_cache=datacube[1,::32,:0+size[0],0:0+size[1]]/30.
+        result = pattern.findall(filenames[i])
+        print(result)
+        #return 0
+        paramcache =  np.array([float(result[2]),np.log10(float(result[1]))])
+        paramcache=(paramcache-np.array([4.,1.]))/np.array([2.,1.398]).astype(np.float64)
         #print(paramcache)
         #in many cases we dont need to do the normalization here, the 21cm signal is always less than 255, thus PIL can handle this
         #datacache=datacache/(3*np.std(datacache))
-        for i in range(slices):
-            key = f"{size[0]}-{str(total).zfill(6)}".encode("utf-8")
+        for j in range(slices):
+            key = f"{size[0]}-{str(total).zfill(6)}_tb".encode("utf-8")
+            #key_rho = f"{size[0]}-{str(total).zfill(6)}_rho".encode("utf-8")
             key_label = f"{size[0]}-{str(total).zfill(6)}_label".encode("utf-8")
             with env.begin(write=True) as txn:
-                txn.put(key, datacache[i].copy())
+                txn.put(key, tb_cache[j].copy())
+            #with env.begin(write=True) as txn:
+            #    txn.put(key_rho, rho_cache[i].copy())
             with env.begin(write=True) as txn:
                 txn.put(key_label,paramcache.copy())
             total += 1
-        datacache=datacube.transpose(1,0,2)[64::128,widthstartpoint:widthstartpoint+size[0],0:0+size[1]]/30.
-        for i in range(slices):
-            key = f"{size[0]}-{str(total).zfill(6)}".encode("utf-8")
+        datacube=np.load(filenames[i]).astype(np.float32)
+        datacube=datacube.transpose(2,0,1,3)
+        tb_cache=datacube[::128,0:2,:0+size[0],0:0+size[1]]
+        tb_cache[:,0,...]= tb_cache[:,0,...]/30.
+        #tb_cache[:,1,...]= (tb_cache[:,1,...])/13.
+        #print(tb_cache[:,1,...].shape)
+        #tb_cache[:,1,...]= (tb_cache[:,1,...])/np.mean(datacube[:,2,...],axis=(0,1))
+        tb_cache[:,1,...]=(tb_cache[:,1,...]+1.)/2.-1
+        #rho_cache=datacube[1,::32,:0+size[0],0:0+size[1]]/30.
+        for j in range(slices):
+            key = f"{size[0]}-{str(total).zfill(6)}_tb".encode("utf-8")
+            #key_rho = f"{size[0]}-{str(total).zfill(6)}_rho".encode("utf-8")
             key_label = f"{size[0]}-{str(total).zfill(6)}_label".encode("utf-8")
             with env.begin(write=True) as txn:
-                txn.put(key, datacache[i].copy())
+                txn.put(key, tb_cache[j].copy())
+            #with env.begin(write=True) as txn:
+            #    txn.put(key_rho, rho_cache[i].copy())
             with env.begin(write=True) as txn:
                 txn.put(key_label,paramcache.copy())
             total += 1
-    
+    print(total)
     with env.begin(write=True) as txn:
         txn.put("length".encode("utf-8"), str(total).encode("utf-8"))
 
@@ -138,6 +180,7 @@ if __name__ == "__main__":
         default="64,64",
         help="resolutions of images for the dataset",
     )
+    parser.add_argument("--num", type=int,default=80, help="number of images in lmdb dataset")
     #deleted the multiprocessing argument, because i'm too stupid to use multiprocessing
     #deleted the resampling argument, not needed anymore
     parser.add_argument("path", type=str, help="path to the image dataset")

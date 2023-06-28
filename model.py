@@ -362,8 +362,8 @@ class ToRGB(nn.Module):
         if upsample:
             self.upsample = Upsample(blur_kernel)
 
-        self.conv = ModulatedConv2d(in_channel, 1, 1, style_dim, demodulate=False)
-        self.bias = nn.Parameter(torch.zeros(1, 1, 1, 1))
+        self.conv = ModulatedConv2d(in_channel, 2, 1, style_dim, demodulate=False)
+        self.bias = nn.Parameter(torch.zeros(1, 2, 1, 1))
 
     def forward(self, input, style, skip=None):
         out = self.conv(input, style)
@@ -384,7 +384,7 @@ class Generator(nn.Module):
         style_dim,
         n_mlp,
         channel_multiplier=2,
-        blur_kernel=[1, 3, 3, 1],
+        blur_kernel=[1, 3,3, 1],
         lr_mlp=0.01,
         param_dim = 2,
         extend = False
@@ -394,7 +394,8 @@ class Generator(nn.Module):
         self.size = size
 
         self.style_dim = style_dim
-
+        self.leakrelu = nn.LeakyReLU(0.001)
+        self.elu = nn.ELU(1)
         layers = [PixelNorm()]
         layers.append(
                 EqualLinear(
@@ -409,10 +410,10 @@ class Generator(nn.Module):
             )
         self.style = nn.Sequential(*layers)
         self.preprocess = nn.Sequential( *[EqualLinear(
-                    param_dim, style_dim, lr_mul=lr_mlp, activation="fused_lrelu"
+                    param_dim,  int(style_dim/2), lr_mul=lr_mlp, activation="fused_lrelu"
                 ),
                 EqualLinear(
-                    style_dim, style_dim, lr_mul=lr_mlp, activation="fused_lrelu"
+                     int(style_dim/2),  int(style_dim/2), lr_mul=lr_mlp, activation="fused_lrelu"
                 )
                 ])
         
@@ -516,7 +517,12 @@ class Generator(nn.Module):
     ):
         processed_param=self.preprocess(labels)
         if not input_is_latent:
-            styles = [self.style(s)*processed_param for s in styles]
+            styles_1 = [self.style(s) for s in styles]
+        styles=[]
+        for s in styles_1:
+            s1 = s.clone()
+            s1[:,::2,...] = s[:,::2,...]*processed_param
+            styles.append(s1)
 
         if noise is None:
             if randomize_noise:
@@ -561,6 +567,7 @@ class Generator(nn.Module):
 
         feat_list = []
         out = self.input(latent,extend = self.extend)
+        #ot1=out
         out = self.conv1(out, latent[:, 0], noise=noise[0])
         feat_list.append(out)
         skip = self.to_rgb1(out, latent[:, 1])
@@ -579,14 +586,18 @@ class Generator(nn.Module):
             i += 2
 
         image = skip
+        image1=image.clone()
+        image1[:,0,...]=self.leakrelu(image[:,0,...])
+        image1[:,1,...]=self.elu(image[:,1,...])
         if return_latents:
-            return image, latent
+            return image1, latent
+            #return image1, ot1
         
         elif return_feats:
-            return image, feat_list
+            return image1, feat_list
         
         else:
-            return image, None
+            return image1, None
 
 
 class ConvLayer(nn.Sequential):
@@ -754,7 +765,7 @@ class Patch_Discriminator(nn.Module):
             1024: 16 * channel_multiplier,
         }
 
-        convs = [ConvLayer(1, channels[size], 1)]
+        convs = [ConvLayer(2, channels[size], 1)]
 
         log_size = int(math.log(size, 2))
 
@@ -776,7 +787,7 @@ class Patch_Discriminator(nn.Module):
             EqualLinear(channels[4] * 4 * 4 * 8, channels[4], activation="fused_lrelu"),
         )
         self.c_pre_final_linear = nn.Sequential(
-            EqualLinear(c_dim, channels[4], activation="fused_lrelu"),
+            EqualLinear(c_dim,int(channels[4]/2), activation="fused_lrelu"),
         )
         self.final_linear=nn.Sequential(
             EqualLinear(channels[4], 16, activation="fused_lrelu"),
@@ -795,13 +806,13 @@ class Patch_Discriminator(nn.Module):
                 inp = self.convs[i](inp)
             else:
                 temp1 = self.convs[i].conv1(inp)
-                if (flag > 0) and (temp1.shape[1] == 512) and (temp1.shape[2] == 8 or temp1.shape[2] == 4):
+                if (flag > 0) and (temp1.shape[1] == 512) and ( temp1.shape[2] == 4):
                     feat.append(temp1)
                 temp2 = self.convs[i].conv2(temp1)
-                if (flag > 0) and (temp2.shape[1] == 512) and (temp2.shape[2] == 8 or temp2.shape[2] == 4):
+                if (flag > 0) and (temp2.shape[1] == 512) and ( temp2.shape[2] == 4):
                     feat.append(temp2)
                 inp = self.convs[i](inp)
-                if (flag > 0) and len(feat) == 4:
+                if (flag > 0) and len(feat) == 2:
                     # We use 4 possible intermediate feature maps to be used for patch-based adversarial loss. Any one of them is selected randomly during training.
                     inp = extra(feat[p_ind], p_ind,label)
                     return inp, None
@@ -819,13 +830,20 @@ class Patch_Discriminator(nn.Module):
 
         out = self.final_conv(out)
         feat.append(out)
-        out = out.view(batch, -1)
-        out = self.pre_final_linear_1(out)/4.
+        outs = torch.chunk(out,4,2)
+        #print(outs[0].shape)
+        newout = outs[0].contiguous().view(batch,-1)
+        for i in range(3):
+            newout = torch.cat((newout,outs[i+1].contiguous().view(batch,-1)),1)
+
+        #out = out.view(batch, -1)
+        out = self.pre_final_linear_1(newout)/4.
 
         # we add the conditional settings here. make labels weight much.
         label=self.c_pre_final_linear(label)
-        out=out*label
-        out=self.final_linear(out)
+        out1=out.clone()
+        out1[:,::2,...]=out[:,::2,...]*label
+        out=self.final_linear(out1)
         return out, None 
 
 
@@ -836,18 +854,19 @@ class Extra(nn.Module):
     def __init__(self,c_dim = 2 ):
         super().__init__()
         self.c_pre_linear = nn.Sequential(
-            EqualLinear(c_dim, 512, activation="fused_lrelu"),
-            EqualLinear(512, 512, activation="fused_lrelu")
+            EqualLinear(c_dim, 256, activation="fused_lrelu"),
         )
         self.new_conv = nn.ModuleList()
         self.new_conv.append(ConvLayer(512, 1, 3))
         self.new_conv.append(ConvLayer(512, 1, 3))
-        self.new_conv.append(ConvLayer(512, 1, 3))
-        self.new_conv.append(ConvLayer(512, 1, 3))
+        #self.new_conv.append(ConvLayer(512, 1, 3))
+        #self.new_conv.append(ConvLayer(512, 1, 3))
 
     def forward(self, inp, ind,param):
         batch, channel, height, width = inp.shape
-        inp = self.c_pre_linear(param).view(batch,512,1,1)*inp
+        inp1 = inp.clone()
+
+        inp1[:,::2,:,:] = self.c_pre_linear(param).view(batch,256,1,1)*inp[:,::2,:,:]
         out = self.new_conv[ind](inp)
         return out
 
@@ -868,7 +887,7 @@ class Patch_Patch_Discriminator(nn.Module):
             1024: 16 * channel_multiplier,
         }
 
-        convs = [ConvLayer(1, channels[size], 1)]
+        convs = [ConvLayer(2, channels[size], 1)]
 
         log_size = int(math.log(size, 2))
 
@@ -890,7 +909,7 @@ class Patch_Patch_Discriminator(nn.Module):
             EqualLinear(channels[4] * 4 * 4 * 8, channels[4], activation="fused_lrelu"),
         )
         self.c_pre_final_linear = nn.Sequential(
-            EqualLinear(c_dim, channels[4], activation="fused_lrelu"),
+            EqualLinear(c_dim, int(channels[4]/2), activation="fused_lrelu"),
         )
         self.final_linear=nn.Sequential(
             EqualLinear(channels[4], 16, activation="fused_lrelu"),
@@ -909,13 +928,13 @@ class Patch_Patch_Discriminator(nn.Module):
                 inp = self.convs[i](inp)
             else:
                 temp1 = self.convs[i].conv1(inp)
-                if (flag > 0) and (temp1.shape[1] == 512) and (temp1.shape[2] == 16 or temp1.shape[2] == 8):
+                if (flag > 0) and (temp1.shape[1] == 512) and ( temp1.shape[2] == 16):
                     feat.append(temp1)
                 temp2 = self.convs[i].conv2(temp1)
-                if (flag > 0) and (temp2.shape[1] == 512) and (temp2.shape[2] == 16 or temp2.shape[2] == 8):
+                if (flag > 0) and (temp2.shape[1] == 512) and ( temp2.shape[2] == 16):
                     feat.append(temp2)
                 inp = self.convs[i](inp)
-                if (flag > 0) and len(feat) == 4:
+                if (flag > 0) and len(feat) == 2:
                     # We use 4 possible intermediate feature maps to be used for patch-based adversarial loss. Any one of them is selected randomly during training.
                     inp = extra(feat[p_ind], p_ind,label)
                     return inp, None
@@ -938,6 +957,7 @@ class Patch_Patch_Discriminator(nn.Module):
 
         # we add the conditional settings here. make labels weight much.
         label=self.c_pre_final_linear(label)
-        out=out*label
-        out=self.final_linear(out)
+        out1=out.clone()
+        out1[:,::2,...]=out[:,::2,...]*label
+        out=self.final_linear(out1)
         return out, None 

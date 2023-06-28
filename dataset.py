@@ -33,12 +33,12 @@ class MultiResolutionDataset(Dataset):
 
     def __getitem__(self, index):
         with self.env.begin(write=False) as txn:
-            key = f'{self.resolution[0]}-{str(index).zfill(6)}'.encode('utf-8')
+            key = f'{self.resolution[0]}-{str(index).zfill(6)}_tb'.encode('utf-8')
             
             # binary files in database
             #now change to numpy array
             img_str = txn.get(key)
-            img_np=np.fromstring(img_str,dtype=np.float32).reshape((self.resolution[0],self.resolution[1]))
+            img_np=np.fromstring(img_str,dtype=np.float32).reshape((2,self.resolution[0],self.resolution[1]))
             
         with self.env.begin(write=False) as txn:
             key_label = f'{self.resolution[0]}-{str(index).zfill(6)}_label'.encode('utf-8')
@@ -49,6 +49,6 @@ class MultiResolutionDataset(Dataset):
         #then open the binary file, get an image object
         #img = Image.open(buffer)
         #apply some transform, which is useless in our case.
-        img = self.transform(img_np)
+        img = torch.tensor(img_np)
         label=torch.from_numpy(label_np).float()
         return img,label

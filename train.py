@@ -102,10 +102,12 @@ def save_image(tensor, latent, fp, nrow=8, padding=2,
         **kwargs: Other arguments are documented in ``make_grid``.
     """
     from PIL import Image
-    grid = utils.make_grid(tensor, nrow=nrow, padding=padding, pad_value=pad_value,
+    #print(tensor[2,0,...].squeeze())
+    grid = utils.make_grid(tensor[:,0,...].unsqueeze(1), nrow=nrow, padding=padding, pad_value=pad_value,
                      normalize=normalize, range=range, scale_each=scale_each)
     # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
     ndarr = grid.to('cpu', torch.float32).numpy()
+    #print(ndarr[1])
     latent=latent.to('cpu', torch.float32).numpy()
     plt.figure(figsize=(10,14))
     plt.imshow(ndarr[0],vmin=0,vmax=3*np.std(ndarr[0]))
@@ -116,9 +118,28 @@ def save_image(tensor, latent, fp, nrow=8, padding=2,
         y_str.append('{:.3f}'.format(latent[i][0]*2+4)+','+'{:.1f}'.format(10**(latent[i][1]*1.398+1)))
     plt.yticks(y_ticks,y_str)
     plt.colorbar()
-    plt.savefig(fp, format=format,dpi=300,bbox_inches='tight')
+    plt.savefig(fp+'.png', format=format,dpi=300,bbox_inches='tight')
     if use_wandb:
-        wandb.log({'plt':wandb.Image(fp)},step=iteration)
+        wandb.log({'tb':wandb.Image(fp+'.png')},step=iteration)
+    plt.close()
+
+    grid = utils.make_grid(tensor[:,1,...].unsqueeze(1), nrow=nrow, padding=padding, pad_value=pad_value,
+                     normalize=normalize, range=range, scale_each=scale_each)
+    # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
+    ndarr = grid.to('cpu', torch.float32).numpy()
+    #latent=latent.to('cpu', torch.float32).numpy()
+    plt.figure(figsize=(10,14))
+    plt.imshow((ndarr[0]+1)*2-1)
+    y_ticks=[]
+    y_str=[]
+    for i in [0,1,2,3]:
+        y_ticks.append(128+i*258)
+        y_str.append('{:.3f}'.format(latent[i][0]*2+4)+','+'{:.1f}'.format(10**(latent[i][1]*1.398+1)))
+    plt.yticks(y_ticks,y_str)
+    plt.colorbar()
+    plt.savefig(fp+'_rho.png', format=format,dpi=300,bbox_inches='tight')
+    if use_wandb:
+        wandb.log({'mass':wandb.Image(fp+'_rho.png')},step=iteration)
     plt.close()
 
 def init_generator(generator):
@@ -154,6 +175,11 @@ def requires_grad(model, flag=True):
     for name, p in model.named_parameters():
         p.requires_grad = flag
 
+def requires_named_grad(model,keywords, flag=False):
+    for name, p in model.named_parameters():
+        for keyword in keywords:
+            if keyword in name:
+                p.requires_grad=flag
 
 def accumulate(model1, model2, decay=0.999):
     par1 = dict(model1.named_parameters())
@@ -326,7 +352,19 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         # load the training image and label
         real_img, real_label = next(loader)
         real_img = real_img.to(device)
+        #print(real_img.shape)
         real_label = real_label.to(device)
+        '''save_image(
+                        real_img[0:4],
+                        real_label,
+                        os.path.join("samples/",args.exp,f"{str(i).zfill(6)}_true"),
+                        nrow=1,
+                        normalize=False,
+                        range=(-1, 1),
+                        use_wandb=False,
+                        iteration=i
+                    )'''
+        
 
         # from here on, we optimise full discriminator
         requires_grad(generator, False)
@@ -334,6 +372,7 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         requires_grad(discriminator, True)
         requires_grad(extra, True)
         requires_grad(extra_patch, False)
+        requires_named_grad(discriminator,['convs.0','convs.1'],False)
 
         if which > 0:
             # sample normally, apply patch-level adversarial loss
@@ -341,7 +380,7 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         else:
             # sample from anchors, apply image-level adversarial loss
             fake_label,noise = get_subspace(args, real_label.clone(),init_z.clone())
-
+        #which = 0
         fake_img, _ = generator(fake_label,noise)
 
         if args.augment :
@@ -411,16 +450,18 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         requires_grad(generator, False)
         requires_grad(d_source, True)
         requires_grad(discriminator, False)
+        requires_named_grad(d_source,['convs.0','convs.1'],False)
         requires_grad(extra, False)
         requires_grad(extra_patch, True)
-        if args.patch:
+        if args.patch and i%4==0:
             if which > 0:
                 # sample normally, apply patch-level adversarial loss
                 fake_label,noise = mixing_noise(args.batch,args.paramdim, args.latent, args.mixing, device)
             else:
                 # sample from anchors, apply image-level adversarial loss
                 fake_label,noise = get_subspace(args, real_label.clone(),init_z.clone())
-
+            
+            fake_label,noise = mixing_noise(args.batch,args.paramdim, args.latent, args.mixing, device)
             fake_img, _ = generator(fake_label,noise)
 
             if args.augment :
@@ -428,9 +469,10 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
                 fake_img, _ = augment(fake_img, ada_aug_p)
 
             patch_ind = random.randint(0,3*args.size[0]-1)
+            patch_ind1 = random.randint(0,3*args.size[0]-1)
 
             fake_img = fake_img[:,:,patch_ind:patch_ind+args.size[0],:]
-            real_img_patch = real_img[:,:,patch_ind:patch_ind+args.size[0],:]
+            real_img_patch = real_img[:,:,patch_ind1:patch_ind1+args.size[0],:]
 
             fake_pred, _ = d_source(
                 fake_img,fake_label, extra=extra_patch, flag=which, p_ind=np.random.randint(lowp, highp))
@@ -438,6 +480,7 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
                 real_img_patch,real_label, extra=extra_patch, flag=which, p_ind=np.random.randint(lowp, highp), real=True)
             #print(fake_pred.shape)
             d_loss = d_logistic_loss(real_pred, fake_pred)
+            #print(d_loss)
 
             loss_dict["d_patch"] = d_loss
             loss_dict["real_score_patch"] = real_pred.mean()
@@ -470,7 +513,7 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
                     ada_aug_p = min(1, max(0, ada_aug_p))
                     ada_augment.mul_(0)
 
-            d_regularize = i % args.d_reg_every == 0
+            d_regularize = i % (args.d_reg_every*4) == 0
 
             if d_regularize:
                 real_img_patch = real_img_patch.detach()
@@ -497,12 +540,13 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         requires_grad(extra, False)
         requires_grad(d_source, False)
         requires_grad(extra_patch, False)
+        #requires_named_grad(generator,['style','preprocess'],False)
         if which > 0:
             # sample normally, apply patch-level adversarial loss
             fake_label,noise = mixing_noise(args.batch,args.paramdim, args.latent, args.mixing, device)
         else:
             # sample from anchors, apply image-level adversarial loss
-            if random.random() > args.full_anchor_p:
+            if args.full_anchor_p > random.random():
                 fake_label,noise = get_subspace(args, real_label.clone(),init_z.clone())
             else :
                 fake_label,_ = get_subspace(args, real_label.clone(),init_z.clone())
@@ -517,9 +561,10 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
             fake_img,fake_label, extra=extra, flag=which, p_ind=np.random.randint(lowp, highp))
         g_loss = g_nonsaturating_loss(fake_pred)
         if args.patch:
+            patch_ind = random.randint(0,3*args.size[0]-1)
             fake_img_patch = fake_img[:,:,patch_ind:patch_ind+args.size[0],:]
             fake_pred_patch,_ = d_source(
-                fake_img_patch,fake_label, extra=extra_patch, flag=which, p_ind=np.random.randint(lowp, highp))
+                fake_img_patch,fake_label, extra=extra_patch, flag=0, p_ind=np.random.randint(lowp, highp))
             g_loss_patch = g_nonsaturating_loss(fake_pred_patch)
         # distance consistency loss
         with torch.set_grad_enabled(False):
@@ -566,9 +611,13 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         dist_target = sfm(dist_target)
         rel_loss = args.kl_wt * \
             kl_loss(torch.log(dist_target), dist_source) # distance consistency loss 
-        g_loss = g_loss + rel_loss 
+        #print(g_loss)
+        #print(rel_loss)
+         
         if args.patch:
-            g_loss = g_loss + g_loss_patch
+            g_loss = (g_loss + g_loss_patch)/2.
+            #print(g_loss_patch)
+        g_loss = g_loss + rel_loss
 
         loss_dict["g"] = g_loss
 
@@ -579,7 +628,7 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
         g_regularize = i % args.g_reg_every == 0
 
         # to save up space
-        del rel_loss, g_loss, d_loss, fake_img, fake_pred, real_img, real_pred, anchor_feat, compare_feat, dist_source, dist_target, feat_source, feat_target
+        del rel_loss, g_loss, d_loss, fake_img,real_img, fake_pred, real_pred, anchor_feat, compare_feat, dist_source, dist_target, feat_source, feat_target
 
         if g_regularize:
             path_batch_size = max(1, args.batch // args.path_batch_shrink)
@@ -665,13 +714,14 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
                     save_image(
                         sample[0:4],
                         sample_c,
-                        os.path.join("samples/",args.exp,f"{str(i).zfill(6)}.png"),
+                        os.path.join("samples/",args.exp,f"{str(i).zfill(6)}"),
                         nrow=1,
                         normalize=False,
                         range=(-1, 1),
                         use_wandb=False,
                         iteration=i
                     )
+                    
                 if i % (args.save_freq) == 0 and wandb:
                     with torch.no_grad():
                         #g_ema.eval()
@@ -679,7 +729,7 @@ def train(args, loader, generator, discriminator, extra, g_optim, d_optim, e_opt
                         save_image(
                             sample[0:4],
                             sample_c,
-                            os.path.join("samples/",args.exp,f"{str(i).zfill(6)}.png"),
+                            os.path.join("samples/",args.exp,f"{str(i).zfill(6)}"),
                             nrow=1,
                             normalize=False,
                             range=(-1, 1),
@@ -710,10 +760,10 @@ if __name__ == "__main__":
 
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--iter", type=int, default=5002)
-    parser.add_argument("--save_freq", type=int, default=300)
-    parser.add_argument("--img_freq", type=int, default=300)
+    parser.add_argument("--save_freq", type=int, default=200)
+    parser.add_argument("--img_freq", type=int, default=200)
     parser.add_argument("--kl_wt", type=int, default=1000)
-    parser.add_argument("--highp", type=int, default=1)
+    parser.add_argument("--highp", type=int, default=2)
     parser.add_argument("--subspace_freq", type=int, default=2)
     parser.add_argument("--feat_ind", type=int, default=3)
     parser.add_argument("--batch", type=int, default=4)
